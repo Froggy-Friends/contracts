@@ -6,10 +6,16 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
+import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+
+error InvalidSize();
+error OverMaxSupply();
 
 contract FroggyFriends is ERC721Upgradeable, OwnableUpgradeable, DefaultOperatorFiltererUpgradeable, ERC2981Upgradeable {
-    string froggyUrl;
-    uint256 maxSupply;
+    using StringsUpgradeable for uint256;
+    string public froggyUrl;
+    uint256 public maxSupply;
+    uint256 private _totalMinted;
     
     function initialize() initializer public {
         __ERC721_init("Froggy Friends", "FROGGY");
@@ -19,6 +25,35 @@ contract FroggyFriends is ERC721Upgradeable, OwnableUpgradeable, DefaultOperator
 
         froggyUrl = "https://metadata.froggyfriendsnft.com/";
         maxSupply = 4444;
+    }
+
+    function airdrop(address[] calldata owners, uint16[] calldata tokenIds) external onlyOwner {
+        if (owners.length != tokenIds.length) {
+            revert InvalidSize();
+        }
+        if (_totalMinted + tokenIds.length > maxSupply) {
+            revert OverMaxSupply();
+        }
+        for (uint16 i; i < tokenIds.length; ) {
+            _mint(owners[i], tokenIds[i]);
+            unchecked {
+                ++i;
+            }
+        }
+        _totalMinted = _totalMinted + tokenIds.length;
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return _totalMinted;
+    }
+
+    function setFroggyUrl(string memory _froggyUrl) external onlyOwner {
+        froggyUrl = _froggyUrl;
+    }
+
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        return bytes(froggyUrl).length > 0 ? string(abi.encodePacked(froggyUrl, tokenId.toString())) : "";
     }
 
     // =============================================================
