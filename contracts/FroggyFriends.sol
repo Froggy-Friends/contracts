@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
+import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import {DefaultOperatorFiltererUpgradeable} from "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
+import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
 import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
 error InvalidSize();
@@ -41,6 +41,23 @@ contract FroggyFriends is ERC721Upgradeable, OwnableUpgradeable, DefaultOperator
             }
         }
         _totalMinted = _totalMinted + tokenIds.length;
+    }
+
+    function tokensOfOwner(address account) external view returns (uint256[] memory) {
+        unchecked {
+            uint256 tokenIdsIdx;
+            uint256 tokenIdsLength = balanceOf(account);
+            uint256[] memory tokenIds = new uint256[](tokenIdsLength);
+            for (uint256 i; tokenIdsIdx != tokenIdsLength; ++i) {
+                if (!_exists(i)) {
+                    continue;
+                }
+                if (ownerOf(i) == account) {
+                    tokenIds[tokenIdsIdx++] = i;
+                }
+            }
+            return tokenIds;
+        }
     }
 
     function totalSupply() public view returns (uint256) {
