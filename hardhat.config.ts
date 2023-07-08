@@ -41,7 +41,7 @@ const config: HardhatUserConfig = {
     currency: 'USD',
     enabled: true,
     coinmarketcap: COINMARKETCAP_API_KEY,
-    gasPrice: 50
+    gasPrice: 15
   },
   typechain: {
     outDir: "types",
