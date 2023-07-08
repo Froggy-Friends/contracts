@@ -2,10 +2,11 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@openzeppelin/hardhat-upgrades";
+import "hardhat-deploy";
 import dotenv from "dotenv";  
 dotenv.config();
 
-const { ALCHEMY_API_URL_STG, ALCHEMY_API_URL, PRIVATE_KEY, ETHERSCAN_API_KEY, COINMARKETCAP_API_KEY } = process.env;
+const { ALCHEMY_API_KEY_STG, ALCHEMY_API_KEY, PRIVATE_KEY, ETHERSCAN_API_KEY, COINMARKETCAP_API_KEY } = process.env;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -23,11 +24,11 @@ const config: HardhatUserConfig = {
       chainId: 1337
     },
     mainnet: {
-      url: ALCHEMY_API_URL,
+      url: ALCHEMY_API_KEY,
       accounts: [`0x${PRIVATE_KEY}`],
     },
     goerli: {
-      url: ALCHEMY_API_URL_STG,
+      url: ALCHEMY_API_KEY_STG,
       accounts: [`0x${PRIVATE_KEY}`],
     },
     coverage: {

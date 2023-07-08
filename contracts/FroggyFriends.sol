@@ -2,23 +2,26 @@
 pragma solidity ^0.8.18;
 
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import {IERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
 import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import {DefaultOperatorFiltererUpgradeable} from "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
 import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {ONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/ONFT721Upgradeable.sol";
+import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/IONFT721Upgradeable.sol";
 
 error InvalidSize();
 error OverMaxSupply();
 
-contract FroggyFriends is ERC721Upgradeable, OwnableUpgradeable, DefaultOperatorFiltererUpgradeable, ERC2981Upgradeable {
+contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable, ERC2981Upgradeable, ONFT721Upgradeable {
     using StringsUpgradeable for uint256;
     string public froggyUrl;
     uint256 public maxSupply;
     uint256 private _totalMinted;
     
-    function initialize() initializer public {
-        __ERC721_init("Froggy Friends", "FROGGY");
+    function initialize(uint256 _minGasToTransfer, address _lzEndpoint) initializer public {
+        __ONFT721Upgradeable_init("Froggy Friends", "FROGGY", _minGasToTransfer, _lzEndpoint);
         __Ownable_init();
         __DefaultOperatorFilterer_init();
         __ERC2981_init();
@@ -77,31 +80,32 @@ contract FroggyFriends is ERC721Upgradeable, OwnableUpgradeable, DefaultOperator
     //                      ERC2981 OVERRIDES
     // =============================================================
 
-    function approve(address operator, uint256 tokenId) public override onlyAllowedOperatorApproval(operator) {
+    function approve(address operator, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperatorApproval(operator) {
         super.approve(operator, tokenId);
     }
 
-    function setApprovalForAll(address operator, bool approved) public override onlyAllowedOperatorApproval(operator) {
+    function setApprovalForAll(address operator, bool approved) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperatorApproval(operator) {
         super.setApprovalForAll(operator, approved);
     }
 
-    function transferFrom(address from, address to, uint256 tokenId) public override onlyAllowedOperator(from) {
+    function transferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
        
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override onlyAllowedOperator(from) {
+    function safeTransferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override onlyAllowedOperator(from) {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC2981Upgradeable,ERC721Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC2981Upgradeable,ONFT721Upgradeable) returns (bool) {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165.
             interfaceId == 0x80ac58cd || // ERC165 interface ID for ERC721. 
             interfaceId == 0x5b5e139f || // ERC165 interface ID for ERC721Metadata.
-            interfaceId == type(IERC2981Upgradeable).interfaceId;
+            interfaceId == type(IERC2981Upgradeable).interfaceId ||
+            interfaceId == type(IONFT721Upgradeable).interfaceId;
     }
 }

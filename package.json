@@ -30,10 +30,12 @@
     "@types/chai": "^4.3.5",
     "dotenv": "^10.0.0",
     "ethers": "^5.7.2",
-    "hardhat": "^2.14.0"
+    "hardhat": "^2.14.0",
+    "hardhat-deploy": "^0.11.34"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.2",
+    "@layerzerolabs/solidity-examples": "^0.0.13",
+    "@openzeppelin/contracts-upgradeable": "^4.9.2",
     "operator-filter-registry": "^1.4.2"
   }
 }
