@@ -101,11 +101,10 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC2981Upgradeable,ONFT721Upgradeable) returns (bool) {
-        return
-            interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165.
-            interfaceId == 0x80ac58cd || // ERC165 interface ID for ERC721. 
-            interfaceId == 0x5b5e139f || // ERC165 interface ID for ERC721Metadata.
-            interfaceId == type(IERC2981Upgradeable).interfaceId ||
-            interfaceId == type(IONFT721Upgradeable).interfaceId;
+        return (
+            interfaceId == type(IERC2981Upgradeable).interfaceId || 
+            interfaceId == type(IONFT721Upgradeable).interfaceId || 
+            super.supportsInterface(interfaceId)
+        );
     }
 }
