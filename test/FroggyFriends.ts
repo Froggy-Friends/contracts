@@ -29,7 +29,6 @@ describe("Froggy Friends", async () => {
     it("over max supply", async () => {
         await froggyFriends.airdrop(wallets.slice(0, 444), tokenIds.slice(0, 444));
         await froggyFriends.airdrop(wallets.slice(444, 888), tokenIds.slice(444, 888));
-        await froggyFriends.airdrop(wallets.slice(888, 444), tokenIds.slice(888, 444));
         await froggyFriends.airdrop(wallets.slice(888, 1332), tokenIds.slice(888, 1332));
         await froggyFriends.airdrop(wallets.slice(1332, 1776), tokenIds.slice(1332, 1776));
         await froggyFriends.airdrop(wallets.slice(1776, 2220), tokenIds.slice(1776, 2220));
@@ -45,7 +44,6 @@ describe("Froggy Friends", async () => {
     it('entire supply', async () => {
         await froggyFriends.airdrop(wallets.slice(0, 444), tokenIds.slice(0, 444));
         await froggyFriends.airdrop(wallets.slice(444, 888), tokenIds.slice(444, 888));
-        await froggyFriends.airdrop(wallets.slice(888, 444), tokenIds.slice(888, 444));
         await froggyFriends.airdrop(wallets.slice(888, 1332), tokenIds.slice(888, 1332));
         await froggyFriends.airdrop(wallets.slice(1332, 1776), tokenIds.slice(1332, 1776));
         await froggyFriends.airdrop(wallets.slice(1776, 2220), tokenIds.slice(1776, 2220));
