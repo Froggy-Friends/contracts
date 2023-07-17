@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 import {IERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
-import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import {DefaultOperatorFiltererUpgradeable} from "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
@@ -14,7 +13,7 @@ import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/co
 error InvalidSize();
 error OverMaxSupply();
 
-contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable, ERC2981Upgradeable, ONFT721Upgradeable {
+contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperatorFiltererUpgradeable {
     using StringsUpgradeable for uint256;
     string public froggyUrl;
     uint256 public maxSupply;

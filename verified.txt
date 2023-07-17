@@ -1,0 +1,17 @@
+> npx hardhat verify --network mainnet 0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F
+
+Verifying implementation: 0x60F7ba6a09c0b4f757e63B855028e0bB665D95fD
+Nothing to compile
+No need to generate any newer typings.
+Successfully submitted source code for contract
+contracts/FroggyFriends.sol:FroggyFriends at 0x60F7ba6a09c0b4f757e63B855028e0bB665D95fD
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract FroggyFriends on Etherscan.
+https://etherscan.io/address/0x60F7ba6a09c0b4f757e63B855028e0bB665D95fD#code
+Verifying proxy: 0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F
+Contract at 0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F already verified.
+Linking proxy 0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F with implementation
+Successfully linked proxy to implementation.
+Verifying proxy admin: 0x8589C38625Dcb050312ca7eadEEe28D01D34E32F
+Contract at 0x8589C38625Dcb050312ca7eadEEe28D01D34E32F already verified.

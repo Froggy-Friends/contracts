@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: ALCHEMY_API_KEY_STG,
-      accounts: [`0x${PRIVATE_KEY}`],
+      accounts: [`0x${PRIVATE_KEY}`]
     },
     coverage: {
       url: "http://127.0.0.1:8555"

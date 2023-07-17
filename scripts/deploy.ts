@@ -1,4 +1,4 @@
-import { ethers, run } from "hardhat";
+import { ethers, run, upgrades } from "hardhat";
 
 
 function sleep(ms: number) {
@@ -9,28 +9,20 @@ function sleep(ms: number) {
 
 async function main() {
     console.log("Starting deployment...");
-    const factory = await ethers.getContractFactory("FroggyFriends");
+    const FroggyFriends = await ethers.getContractFactory("FroggyFriends");
     const [owner] = await ethers.getSigners();
     console.log("\nDeployment Owner: ", owner.address);
 
-    const contract = (await factory.deploy());
-    console.log("\nContract Address: ", contract.address);
+    const _minGasToTransfer = 100000;
+    const _lzEndpoint = '0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675';
+    const froggyFriends = (await upgrades.deployProxy(FroggyFriends, [_minGasToTransfer, _lzEndpoint]));
+    console.log("\nContract Address: ", froggyFriends.address);
     
-    await contract.deployed();
+    await froggyFriends.deployed();
     console.log("\nContract deployed...");
 
-    await contract.deployTransaction.wait(5);
-    console.log("\nContract deployed with 5 confirmations waiting 60 seconds to verify...");
-
-    await sleep(60000);
-
-    console.log("\nPublishing and verifying code to Etherscan...");
-    await run("verify:verify", 
-        { 
-            address: contract.address,
-            constructorArguments: []
-        }
-    );
+    await froggyFriends.deployTransaction.wait(5);
+    console.log("\nContract deployed with 5 confirmations");
 }
 
 main()

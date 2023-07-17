@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "compile": "npx hardhat compile",
-    "goerli": "npx hardhat run scripts/deploy.ts --network goerli",
-    "prod": "npx hardhat run scripts/deploy.ts --network mainnet",
-    "test": "npx hardhat test --network hardhat --typecheck",
-    "verify": "npx hardhat verify --constructor-args arguments.js {DEPLOYED_CONTRACT_ADDRESS}"
+    "airdrop": "npx hardhat run scripts/airdrop.ts --network goerli",
+    "deploy": "npx hardhat run scripts/deploy.ts --network mainnet",
+    "verify": "npx hardhat verify --network mainnet 0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F",
+    "test": "npx hardhat test --network hardhat --typecheck"
   },
   "repository": {
     "type": "git",
