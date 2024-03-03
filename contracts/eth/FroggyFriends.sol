@@ -87,15 +87,15 @@ contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperato
         super.setApprovalForAll(operator, approved);
     }
 
-    function transferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
+    function transferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) ifNotLocked(tokenId){
         super.transferFrom(from, to, tokenId);
     }
        
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
+    function safeTransferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) ifNotLocked(tokenId){
         super.safeTransferFrom(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) ifNotLocked(tokenId){
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
@@ -105,5 +105,170 @@ contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperato
             interfaceId == type(IONFT721Upgradeable).interfaceId || 
             super.supportsInterface(interfaceId)
         );
+    // ellie.xyz1991@gmail.com/ : Changed
+    
+    // =============================================================
+    //                     upgrade version 1
+    // =============================================================
+
+    ITadpole public tadpole;
+
+    address public tadpoleSender;
+
+    IRibbitItem public constant ribbitItem = IRibbitItem(0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3);
+
+    IFroggySoulbounds public constant froggySoulbounds = IFroggySoulbounds(0xFdFFd2208AA128A2F9dc520A2A4E93746B588209);
+
+    // owner  => HibernationStatus
+    mapping(address => HibernationStatus) public lockStatus;
+
+    // owner => block.timestamp(now)
+    mapping(address => uint256) public lockDate;
+
+    // HibernationStatus => tadpole amount for HibernationStatus for hibernating one froggy
+    mapping(HibernationStatus => uint256) public statusTadpoleAmount;
+
+    // tokenAddress => tokrnId => rate
+    mapping(address => mapping(uint256 => uint256)) public TokenBoostRate;
+
+    // tokenAddress => BoostTokenInfo
+    mapping(address => BoostTokenInfo) public boostTokenInfos;
+
+    struct BoostTokenInfo {
+        address tokenAddress;
+        uint256 id;
+        bytes32 symbol;
     }
+
+    enum HibernationStatus {
+        AWAKE,
+        THIRTYDAY,
+        SIXTYDAY,
+        NINETYDAY
+    }
+
+    event LogHibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
+
+    event LogAwake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
+
+    modifier ifNotLocked(uint256 _tokenId) {
+        require(lockStatus[ownerOf(_tokenId)] == HibernationStatus.AWAKE, "this token has been locked");
+        _;
+    }
+
+    // considerations : gas cost should be small
+    // onlyAllowedOperator modifier
+    function lockAllMyTokens(HibernationStatus _hibernationStatus) public returns (bool) {
+        uint256 _balances = balanceOf(msg.sender);
+
+        require(_balances > 0, "you don't have any tokens");
+
+        // might remove this check (gas cost wise)
+        require(_hibernationStatus != HibernationStatus.AWAKE, "the token is awake by defult");
+
+        lockStatus[msg.sender] = _hibernationStatus;
+
+        lockDate[msg.sender] = block.timestamp;
+
+        emit LogHibernate(msg.sender, block.timestamp, _hibernationStatus);
+
+        return true;
+    }
+
+    function unlockMyTokens() public returns (bool) {
+        require(lockDate[msg.sender] > 0, "your tokens have not been locked");
+
+        require(block.timestamp > getUnlockTimestamp(), "awake time has'nt been reached");
+
+        uint256 _tadpoleAmount = calculateTotalRewardAmount();
+
+        // owner of tadpole is the tadpole sender?
+        tadpole.transferFrom(tadpoleSender, msg.sender, _tadpoleAmount);
+
+        // write test here
+
+        lockStatus[msg.sender] = HibernationStatus.AWAKE;
+
+        emit LogAwake(msg.sender, block.timestamp, _tadpoleAmount);
+
+        return true;
+    }
+
+    // no froggy rarity tiers . all of them are flat
+    //total rewards = base * total frogs * boosts
+    function getRewardPerFroggy() public view returns (uint256) {
+        return (statusTadpoleAmount[lockStatus[msg.sender]] * (1 + (calculateTotalBoost() / 100))) * 10 ** 18;
+    }
+
+    function calculateTotalRewardAmount() public view returns (uint256) {
+        return getRewardPerFroggy() * balanceOf(msg.sender);
+    }
+
+    // should figure out a way to reduce gas cost
+    function calculateTotalBoost() public view returns (uint256) {
+        //Froggy Minter Token ID = 1
+        //One Year Anniversary Holder Token ID = 2
+        uint256 ribbitItemBoost = TokenBoostRate[address(ribbitItem)][1] * ribbitItem.balanceOf(msg.sender, 1);
+
+        uint256 froggyMinterBoost =
+            TokenBoostRate[address(froggySoulbounds)][1] * froggySoulbounds.balanceOf(msg.sender, 1);
+
+        uint256 oneYearAnniversaryBoost =
+            TokenBoostRate[address(froggySoulbounds)][2] * froggySoulbounds.balanceOf(msg.sender, 2);
+
+        return ribbitItemBoost + froggyMinterBoost + oneYearAnniversaryBoost;
+    }
+
+    function getLockDuration() public view returns (uint256) {
+        return (uint8(lockStatus[msg.sender]) * 30) * (24 * 60 * 60); // (number of hibernate days) * each day
+    }
+
+    function getUnlockTimestamp() public view returns (uint256) {
+        return getLockDuration() + lockDate[msg.sender];
+    }
+
+    function setTadpoleForStatus(HibernationStatus _status, uint256 _amount) public onlyOwner {
+        statusTadpoleAmount[_status] = _amount;
+    }
+
+    function setBoostRate(address _address, uint256 _tokenId, uint256 _rate) public onlyOwner {
+        TokenBoostRate[_address][_tokenId] = _rate;
+    }
+
+    function setTadpole(address _tadpole) public onlyOwner {
+        tadpole = ITadpole(_tadpole);
+    }
+
+    function setTadpoleSender(address _sender) public onlyOwner {
+        tadpoleSender = _sender;
+    }
+}
+
+interface ITadpole {
+    function transferFrom(address from, address to, uint256 amountOrId) external;
+}
+
+// address : 0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3
+interface IRibbitItem {
+    /// @notice returns the number of ribbit items an account owns
+    /// @param account the address to check the balance of
+    /// @param id the ribbit item id
+    //note: Golden Lily Pad Token ID = 1
+    function balanceOf(address account, uint256 id) external view returns (uint256);
+}
+
+// address : 0xfdffd2208aa128a2f9dc520a2a4e93746b588209
+interface IFroggySoulbounds {
+    //Froggy Minter Token ID = 1
+    //One Year Anniversary Holder Token ID = 2
+    function balanceOf(address account, uint256 id) external view returns (uint256);
+}
+
+// Tadpoles.sol Owner
+// 0x7A405A70575714D74A1fA0B860730CF7456e6eBB
+// FroggyFriends.sol Owner
+// 0x6b01aD68aB6F53128B7A6Fe7E199B31179A4629a
+
+// ellie.xyz1991@gmail.com\
+
 }
