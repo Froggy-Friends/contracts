@@ -270,5 +270,3 @@ interface IFroggySoulbounds {
 // 0x6b01aD68aB6F53128B7A6Fe7E199B31179A4629a
 
 // ellie.xyz1991@gmail.com\
-
-}
