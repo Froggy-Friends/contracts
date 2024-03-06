@@ -75,6 +75,10 @@ contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperato
         return bytes(froggyUrl).length > 0 ? string(abi.encodePacked(froggyUrl, tokenId.toString())) : "";
     }
 
+    function setRoyalties(address receiver, uint96 feeNumerator) external onlyOwner {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
     // =============================================================
     //                      ERC2981 OVERRIDES
     // =============================================================
