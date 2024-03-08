@@ -197,14 +197,14 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
 
     /**
      * Sets the boost rate
-     * @param _address the boost contract address
+     * @param _contract the boost contract address
      * @param _tokenId the boost token id
      * @param _rate the boost rate flat number i.e. set 10 for 10% representation
      */
-    function setBoostRate(address _address, uint256 _tokenId, uint256 _rate) public onlyOwner {
+    function setBoostRate(address _contract, uint256 _tokenId, uint256 _rate) public onlyOwner {
         // argument "_rate" should not be in percentage.
         // example: for 10%  the argument for "_rate" should be 10
-        boostRate[_address][_tokenId] = _rate;
+        boostRate[_contract][_tokenId] = _rate;
     }
 
     /**
