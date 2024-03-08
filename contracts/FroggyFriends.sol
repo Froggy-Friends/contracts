@@ -24,8 +24,8 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     // Hibernation
     ITadpole public tadpole;
     address public tadpoleSender;
-    IRibbitItem public constant ribbitItem = IRibbitItem(0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3);
-    IFroggySoulbounds public constant froggySoulbounds = IFroggySoulbounds(0xFdFFd2208AA128A2F9dc520A2A4E93746B588209);
+    IRibbitItem public ribbitItem;
+    IFroggySoulbounds public froggySoulbounds;
     mapping(address => HibernationStatus) public lockStatus; // owner  => HibernationStatus
     mapping(address => uint256) public HibernationDate; // owner => block.timestamp(now)
     mapping(HibernationStatus => uint256) public statusTadpoleAmount; // HibernationStatus => tadpole amount per frog
@@ -198,6 +198,14 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     //invoke this function to make Thirtyday hibernation unavailable when _THIRTYDAY is false
     function setThirtydayAvailable(bool _THIRTYDAY) public onlyOwner {
         lockStatusAvailability[HibernationStatus.THIRTYDAY] = _THIRTYDAY;
+    }
+
+    function setRibbitItemContract(address _ribbitItem) public onlyOwner {
+        ribbitItem = IRibbitItem(_ribbitItem);
+    }
+
+    function setFroggySoulboundsContract(address _froggySoulbounds) public onlyOwner {
+        froggySoulbounds = IFroggySoulbounds(_froggySoulbounds);
     }
 
     function setTadpoleContract(address _tadpole) public onlyOwner {
