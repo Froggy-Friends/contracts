@@ -10,29 +10,10 @@ import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interface
 import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import {ONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/ONFT721Upgradeable.sol";
 import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/IONFT721Upgradeable.sol";
+import {ITadpole, IRibbitItem, IFroggySoulbounds} from "./Interfaces.sol";
 
 error InvalidSize();
 error OverMaxSupply();
-
-interface ITadpole {
-    function transferFrom(address from, address to, uint256 amountOrId) external;
-}
-
-// address : 0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3
-interface IRibbitItem {
-    /// @notice returns the number of ribbit items an account owns
-    /// @param account the address to check the balance of
-    /// @param id the ribbit item id
-    //note: Golden Lily Pad Token ID = 1
-    function balanceOf(address account, uint256 id) external view returns (uint256);
-}
-
-// address : 0xfdffd2208aa128a2f9dc520a2a4e93746b588209
-interface IFroggySoulbounds {
-    //Froggy Minter Token ID = 1
-    //One Year Anniversary Holder Token ID = 2
-    function balanceOf(address account, uint256 id) external view returns (uint256);
-}
 
 contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable, ERC2981Upgradeable, ONFT721Upgradeable {
     using StringsUpgradeable for uint256;
@@ -40,40 +21,19 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     uint256 public maxSupply;
     uint256 private _totalMinted;
 
+    // Hibernation
     ITadpole public tadpole;
-
     address public tadpoleSender;
-
     IRibbitItem public constant ribbitItem = IRibbitItem(0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3);
-
     IFroggySoulbounds public constant froggySoulbounds = IFroggySoulbounds(0xFdFFd2208AA128A2F9dc520A2A4E93746B588209);
-
-    // owner  => HibernationStatus
-    mapping(address => HibernationStatus) public lockStatus;
-
-    // owner => block.timestamp(now)
-    mapping(address => uint256) public HibernationDate;
-
-    // HibernationStatus => tadpole amount for HibernationStatus for hibernating one froggy
-    mapping(HibernationStatus => uint256) public statusTadpoleAmount;
-
-    // tokenAddress => tokrnId => rate
-    mapping(address => mapping(uint256 => uint256)) public TokenBoostRate;
-
-    // HibernationStatus => isAvailable
-    mapping(HibernationStatus => bool) public lockStatusAvailability;
-
-    enum HibernationStatus {
-        AWAKE,
-        THIRTYDAY,
-        SIXTYDAY,
-        NINETYDAY
-    }
-
+    mapping(address => HibernationStatus) public lockStatus; // owner  => HibernationStatus
+    mapping(address => uint256) public HibernationDate; // owner => block.timestamp(now)
+    mapping(HibernationStatus => uint256) public statusTadpoleAmount; // HibernationStatus => tadpole amount per frog
+    mapping(address => mapping(uint256 => uint256)) public TokenBoostRate; // tokenAddress => tokenId => rate
+    mapping(HibernationStatus => bool) public lockStatusAvailability; // HibernationStatus => isAvailable
+    enum HibernationStatus { AWAKE, THIRTYDAY, SIXTYDAY, NINETYDAY }
     event LogHibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
-
     event LogAwake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
-
     
     function initialize(uint256 _minGasToTransfer, address _lzEndpoint) initializer public {
         __ONFT721Upgradeable_init("Froggy Friends", "FROGGY", _minGasToTransfer, _lzEndpoint);
@@ -83,39 +43,6 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
 
         froggyUrl = "https://metadata.froggyfriendsnft.com/";
         maxSupply = 4444;
-    }
-
-    function airdrop(address[] calldata owners, uint16[] calldata tokenIds) external onlyOwner {
-        if (owners.length != tokenIds.length) {
-            revert InvalidSize();
-        }
-        if (_totalMinted + tokenIds.length > maxSupply) {
-            revert OverMaxSupply();
-        }
-        for (uint16 i; i < tokenIds.length; ) {
-            _mint(owners[i], tokenIds[i]);
-            unchecked {
-                ++i;
-            }
-        }
-        _totalMinted = _totalMinted + tokenIds.length;
-    }
-
-    function tokensOfOwner(address account) external view returns (uint256[] memory) {
-        unchecked {
-            uint256 tokenIdsIdx;
-            uint256 tokenIdsLength = balanceOf(account);
-            uint256[] memory tokenIds = new uint256[](tokenIdsLength);
-            for (uint256 i; tokenIdsIdx != tokenIdsLength; ++i) {
-                if (!_exists(i)) {
-                    continue;
-                }
-                if (ownerOf(i) == account) {
-                    tokenIds[tokenIdsIdx++] = i;
-                }
-            }
-            return tokenIds;
-        }
     }
 
     function totalSupply() public view returns (uint256) {
@@ -182,38 +109,23 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     }
 
     // considerations : gas cost should be small
-    function hibernate(HibernationStatus _hibernationStatus)
-        public
-        checkHibernationIsAvailable(_hibernationStatus)
-        returns (bool)
-    {
+    function hibernate(HibernationStatus _hibernationStatus) public checkHibernationIsAvailable(_hibernationStatus) returns (bool) {
         uint256 _balances = balanceOf(msg.sender);
-
         require(_balances > 0, "you don't have any tokens");
-
         lockStatus[msg.sender] = _hibernationStatus;
-
         HibernationDate[msg.sender] = block.timestamp;
-
         emit LogHibernate(msg.sender, block.timestamp, _hibernationStatus);
-
         return true;
     }
 
     function unlockMyTokens() public returns (bool) {
         require(HibernationDate[msg.sender] > 0, "your tokens have not been locked");
-
         require(block.timestamp > getUnlockTimestamp(msg.sender), "awake time has'nt been reached");
-
         uint256 _tadpoleAmount = _calculateTotalRewardAmount();
-
         //the total amount should be tested and ceck if it is in compliance with the expectations
         tadpole.transferFrom(tadpoleSender, msg.sender, _tadpoleAmount);
-
         lockStatus[msg.sender] = HibernationStatus.AWAKE;
-
         emit LogAwake(msg.sender, block.timestamp, _tadpoleAmount);
-
         return true;
     }
 
@@ -244,17 +156,12 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
 
     // should figure out a way to reduce gas cost
     function _calculateTotalBoost() internal view returns (uint256) {
-        // Golden Lily Pad Token ID = 1
+        // Golden Lily Pad
         uint256 ribbitItemBoost = TokenBoostRate[address(ribbitItem)][1] * ribbitItem.balanceOf(msg.sender, 1);
-
-        //Froggy Minter Token ID = 1
-        uint256 froggyMinterBoost =
-            TokenBoostRate[address(froggySoulbounds)][1] * froggySoulbounds.balanceOf(msg.sender, 1);
-
-        //One Year Anniversary Holder Token ID = 2
-        uint256 oneYearAnniversaryBoost =
-            TokenBoostRate[address(froggySoulbounds)][2] * froggySoulbounds.balanceOf(msg.sender, 2);
-
+        //Froggy Minter Soulbound
+        uint256 froggyMinterBoost = TokenBoostRate[address(froggySoulbounds)][1] * froggySoulbounds.balanceOf(msg.sender, 1);
+        //One Year Anniversary Holder Soulbound
+        uint256 oneYearAnniversaryBoost = TokenBoostRate[address(froggySoulbounds)][2] * froggySoulbounds.balanceOf(msg.sender, 2);
         return ribbitItemBoost + froggyMinterBoost + oneYearAnniversaryBoost;
     }
 
