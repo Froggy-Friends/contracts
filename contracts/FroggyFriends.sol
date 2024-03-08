@@ -27,13 +27,13 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     IRibbitItem public ribbitItem;
     IFroggySoulbounds public froggySoulbounds;
     mapping(address => HibernationStatus) public lockStatus; // owner  => HibernationStatus
-    mapping(address => uint256) public HibernationDate; // owner => block.timestamp(now)
+    mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
     mapping(HibernationStatus => uint256) public statusTadpoleAmount; // HibernationStatus => tadpole amount per frog
-    mapping(address => mapping(uint256 => uint256)) public TokenBoostRate; // tokenAddress => tokenId => rate
+    mapping(address => mapping(uint256 => uint256)) public boostRate; // tokenAddress => tokenId => rate
     mapping(HibernationStatus => bool) public lockStatusAvailability; // HibernationStatus => isAvailable
     enum HibernationStatus { AWAKE, THIRTYDAY, SIXTYDAY, NINETYDAY }
-    event LogHibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
-    event LogAwake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
+    event Hibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
+    event Wake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
     
     function initialize(uint256 _minGasToTransfer, address _lzEndpoint) initializer public {
         __ONFT721Upgradeable_init("Froggy Friends", "FROGGY", _minGasToTransfer, _lzEndpoint);
@@ -117,8 +117,8 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
         uint256 _balances = balanceOf(msg.sender);
         require(_balances > 0, "Frog balance is zero.");
         lockStatus[msg.sender] = _hibernationStatus;
-        HibernationDate[msg.sender] = block.timestamp;
-        emit LogHibernate(msg.sender, block.timestamp, _hibernationStatus);
+        hibernationDate[msg.sender] = block.timestamp;
+        emit Hibernate(msg.sender, block.timestamp, _hibernationStatus);
         return true;
     }
 
@@ -127,12 +127,12 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * @return true when wake is complete
      */
     function wake() public returns (bool) {
-        require(HibernationDate[msg.sender] > 0, "You are not currently Hibernating.");
+        require(hibernationDate[msg.sender] > 0, "You are not currently Hibernating.");
         require(block.timestamp > getUnlockTimestamp(msg.sender), "Your Hibernation period has not ended.");
         uint256 _tadpoleAmount = _calculateTotalRewardAmount(); // calculate total reward amount includes base rate + boosts
         tadpole.transferFrom(tadpoleSender, msg.sender, _tadpoleAmount);
         lockStatus[msg.sender] = HibernationStatus.AWAKE;
-        emit LogAwake(msg.sender, block.timestamp, _tadpoleAmount);
+        emit Wake(msg.sender, block.timestamp, _tadpoleAmount);
         return true;
     }
 
@@ -149,7 +149,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * @return unlockTimestamp hibernation completion date in seconds
      */
     function getUnlockTimestamp(address _account) public view returns (uint256) {
-        return getLockDuration(_account) + HibernationDate[_account];
+        return getLockDuration(_account) + hibernationDate[_account];
     }
 
     /**
@@ -178,9 +178,9 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * Calculates total boost percentage for the holder by adding all available boost percentages.
      */
     function _calculateTotalBoost() internal view returns (uint256) {
-        uint256 ribbitItemBoost = TokenBoostRate[address(ribbitItem)][1] * ribbitItem.balanceOf(msg.sender, 1); // Golden Lily Pad
-        uint256 froggyMinterBoost = TokenBoostRate[address(froggySoulbounds)][1] * froggySoulbounds.balanceOf(msg.sender, 1); //Froggy Minter Soulbound
-        uint256 oneYearAnniversaryBoost = TokenBoostRate[address(froggySoulbounds)][2] * froggySoulbounds.balanceOf(msg.sender, 2); //One Year Anniversary Holder Soulbound
+        uint256 ribbitItemBoost = boostRate[address(ribbitItem)][1] * ribbitItem.balanceOf(msg.sender, 1); // Golden Lily Pad
+        uint256 froggyMinterBoost = boostRate[address(froggySoulbounds)][1] * froggySoulbounds.balanceOf(msg.sender, 1); //Froggy Minter Soulbound
+        uint256 oneYearAnniversaryBoost = boostRate[address(froggySoulbounds)][2] * froggySoulbounds.balanceOf(msg.sender, 2); //One Year Anniversary Holder Soulbound
         return ribbitItemBoost + froggyMinterBoost + oneYearAnniversaryBoost;
     }
 
@@ -204,7 +204,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     function setBoostRate(address _address, uint256 _tokenId, uint256 _rate) public onlyOwner {
         // argument "_rate" should not be in percentage.
         // example: for 10%  the argument for "_rate" should be 10
-        TokenBoostRate[_address][_tokenId] = _rate;
+        boostRate[_address][_tokenId] = _rate;
     }
 
     /**
