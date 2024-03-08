@@ -105,7 +105,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     }
 
     modifier checkHibernationIsAvailable(HibernationStatus _hibernationStatus) {
-        require(hibernationAvailable[_hibernationStatus], "Not a valid Hibernation duration.");
+        require(hibernationAvailable[_hibernationStatus], "Hibernation choice is unavailable.");
         _;
     }
 
@@ -128,7 +128,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * @return true when wake is complete
      */
     function wake() public returns (bool) {
-        require(hibernationDate[msg.sender] > 0, "You are not currently Hibernating.");
+        require(hibernationDate[msg.sender] > 0, "Your frogs are not currently Hibernating.");
         require(block.timestamp > getUnlockTimestamp(msg.sender), "Your Hibernation period has not ended.");
         uint256 _tadpoleAmount = _calculateTotalRewardAmount(); // calculate total reward amount includes base rate + boosts
         tadpole.transferFrom(tadpoleSender, msg.sender, _tadpoleAmount);
