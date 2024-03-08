@@ -14,7 +14,8 @@ async function main() {
     console.log("\nDeployment Owner: ", owner.address);
 
     const _minGasToTransfer = 100000;
-    const _lzEndpoint = '0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675';
+    // const _lzEndpoint = '0x4e08B1F1AC79898569CfB999FB92B5495FB18A2B'; //holesky
+    const _lzEndpoint = '0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675'; //mainnet
     const froggyFriends = (await upgrades.deployProxy(FroggyFriends, [_minGasToTransfer, _lzEndpoint]));
     console.log("\nContract Address: ", froggyFriends.address);
 

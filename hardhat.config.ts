@@ -3,10 +3,10 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-deploy";
-import dotenv from "dotenv";  
+import dotenv from "dotenv";
 dotenv.config();
 
-const { ALCHEMY_API_KEY_STG, ALCHEMY_API_KEY, PRIVATE_KEY, ETHERSCAN_API_KEY, COINMARKETCAP_API_KEY } = process.env;
+const { ALCHEMY_API_KEY_HOLESKY, ALCHEMY_API_KEY_STG, ALCHEMY_API_KEY, PRIVATE_KEY, ETHERSCAN_API_KEY, COINMARKETCAP_API_KEY } = process.env;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -18,7 +18,7 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  defaultNetwork: "goerli",
+  defaultNetwork: "holesky",
   networks: {
     hardhat: {
       chainId: 1337
@@ -31,12 +31,26 @@ const config: HardhatUserConfig = {
       url: ALCHEMY_API_KEY_STG,
       accounts: [`0x${PRIVATE_KEY}`]
     },
+    holesky: {
+      url: ALCHEMY_API_KEY_HOLESKY,
+      accounts: [`0x${PRIVATE_KEY}`]
+    },
     coverage: {
       url: "http://127.0.0.1:8555"
     }
   },
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,
+    customChains: [
+      {
+        network: "holesky",
+        chainId: 17000,
+        urls: {
+          apiURL: "https://api-holesky.etherscan.io/api",
+          browserURL: "https://holesky.etherscan.io/"
+        }
+      }
+    ]
   },
   gasReporter: {
     currency: 'USD',
