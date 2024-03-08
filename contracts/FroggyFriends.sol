@@ -26,9 +26,9 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     address public tadpoleSender;
     IRibbitItem public ribbitItem;
     IFroggySoulbounds public froggySoulbounds;
-    mapping(address => HibernationStatus) public lockStatus; // owner  => HibernationStatus
+    mapping(address => HibernationStatus) public hibernationStatus; // owner  => HibernationStatus
     mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
-    mapping(HibernationStatus => uint256) public statusTadpoleAmount; // HibernationStatus => tadpole amount per frog
+    mapping(HibernationStatus => uint256) public hibernationStatusRate; // HibernationStatus => tadpole amount per frog
     mapping(address => mapping(uint256 => uint256)) public boostRate; // tokenAddress => tokenId => rate
     mapping(HibernationStatus => bool) public lockStatusAvailability; // HibernationStatus => isAvailable
     enum HibernationStatus { AWAKE, THIRTYDAY, SIXTYDAY, NINETYDAY }
@@ -99,7 +99,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     // =============================================================
 
     modifier ifNotHibernating(uint256 _tokenId) {
-        require(lockStatus[ownerOf(_tokenId)] == HibernationStatus.AWAKE, "Frog is currently Hibernating.");
+        require(hibernationStatus[ownerOf(_tokenId)] == HibernationStatus.AWAKE, "Frog is currently Hibernating.");
         _;
     }
 
@@ -116,7 +116,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     function hibernate(HibernationStatus _hibernationStatus) public checkHibernationIsAvailable(_hibernationStatus) returns (bool) {
         uint256 _balances = balanceOf(msg.sender);
         require(_balances > 0, "Frog balance is zero.");
-        lockStatus[msg.sender] = _hibernationStatus;
+        hibernationStatus[msg.sender] = _hibernationStatus;
         hibernationDate[msg.sender] = block.timestamp;
         emit Hibernate(msg.sender, block.timestamp, _hibernationStatus);
         return true;
@@ -131,7 +131,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
         require(block.timestamp > getUnlockTimestamp(msg.sender), "Your Hibernation period has not ended.");
         uint256 _tadpoleAmount = _calculateTotalRewardAmount(); // calculate total reward amount includes base rate + boosts
         tadpole.transferFrom(tadpoleSender, msg.sender, _tadpoleAmount);
-        lockStatus[msg.sender] = HibernationStatus.AWAKE;
+        hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, _tadpoleAmount);
         return true;
     }
@@ -141,7 +141,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * @return lockDuration total hibernation duration in seconds
      */
     function getLockDuration(address _account) public view returns (uint256) {
-        return (uint8(lockStatus[_account]) * 30) * (24 * 60 * 60); // (number of hibernate days) * each day
+        return (uint8(hibernationStatus[_account]) * 30) * (24 * 60 * 60); // (number of hibernate days) * each day
     }
 
     /**
@@ -163,7 +163,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * Calculates tadpole rewards per frog including (base rate + boosts)
      */
     function _getRewardPerFroggy() internal view returns (uint256) {
-        return (statusTadpoleAmount[lockStatus[msg.sender]]) + _calculateTotalBoostedTadpoles();
+        return (hibernationStatusRate[hibernationStatus[msg.sender]]) + _calculateTotalBoostedTadpoles();
     }
 
     /**
@@ -171,7 +171,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * The hibernation duration (30,60,90) rate should be a flat number.
      */
     function _calculateTotalBoostedTadpoles() internal view returns (uint256) {
-        return (statusTadpoleAmount[lockStatus[msg.sender]] * _calculateTotalBoost()) / 100;
+        return (hibernationStatusRate[hibernationStatus[msg.sender]] * _calculateTotalBoost()) / 100;
     }
 
     /**
@@ -192,7 +192,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     function setTadpoleReward(HibernationStatus _status, uint256 _amount) public onlyOwner {
         // argument "_amount" should be considered as 16 decimals
         // argument "_amount" should be multiplied by 10**16
-        statusTadpoleAmount[_status] = _amount * 100;
+        hibernationStatusRate[_status] = _amount * 100;
     }
 
     /**
