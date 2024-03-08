@@ -222,7 +222,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * Enable or disable the 90 day hibernation option
      * @param _available set to true to enable 90 day hibernation, false to disable the option
      */
-    function setNinetydayAvailable(bool _available) public onlyOwner {
+    function setNinetyDayAvailable(bool _available) public onlyOwner {
         hibernationAvailable[HibernationStatus.NINETYDAY] = _available;
     }
 
@@ -230,7 +230,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * Enable or disable the 60 day hibernation option
      * @param _available set to true to enable 60 day hibernation, false to disable the option
      */
-    function setSixtydayAvailable(bool _available) public onlyOwner {
+    function setSixtyDayAvailable(bool _available) public onlyOwner {
         hibernationAvailable[HibernationStatus.SIXTYDAY] = _available;
     }
 
@@ -238,7 +238,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
      * Enable or disable the 30 day hibernation option
      * @param _available set to true to enable 30 day hibernation, false to disable the option
      */
-    function setThirtydayAvailable(bool _available) public onlyOwner {
+    function setThirtyDayAvailable(bool _available) public onlyOwner {
         hibernationAvailable[HibernationStatus.THIRTYDAY] = _available;
     }
 
