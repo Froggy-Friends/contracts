@@ -1,11 +1,4 @@
-import { ethers, run, upgrades } from "hardhat";
-
-
-function sleep(ms: number) {
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    })
-}
+import { ethers, upgrades } from "hardhat";
 
 async function main() {
     console.log("Starting deployment...");
@@ -13,11 +6,9 @@ async function main() {
     const [owner] = await ethers.getSigners();
     console.log("\nDeployment Owner: ", owner.address);
 
-    const _minGasToTransfer = 100000;
-    // const _lzEndpoint = '0x4e08B1F1AC79898569CfB999FB92B5495FB18A2B'; //holesky
-    const _lzEndpoint = '0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675'; //mainnet
-    const froggyFriends = (await upgrades.deployProxy(FroggyFriends, [_minGasToTransfer, _lzEndpoint]));
-    console.log("\nContract Address: ", froggyFriends.address);
+    // const froggyFriends = (await upgrades.upgradeProxy('0x586bd2155BDb9E9270439656D2d520A54e6b9448', FroggyFriends, { timeout: 0 })); // holesky
+    const froggyFriends = (await upgrades.upgradeProxy('0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F', FroggyFriends, { timeout: 0 })); //mainnet
+    console.log("\nUpgraded contract address: ", froggyFriends.address);
 
     await froggyFriends.deployed();
     console.log("\nContract deployed...");

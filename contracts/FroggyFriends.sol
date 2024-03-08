@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 import {IERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
+import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import {DefaultOperatorFiltererUpgradeable} from "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {IERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
@@ -13,11 +14,66 @@ import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/co
 error InvalidSize();
 error OverMaxSupply();
 
-contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperatorFiltererUpgradeable {
+interface ITadpole {
+    function transferFrom(address from, address to, uint256 amountOrId) external;
+}
+
+// address : 0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3
+interface IRibbitItem {
+    /// @notice returns the number of ribbit items an account owns
+    /// @param account the address to check the balance of
+    /// @param id the ribbit item id
+    //note: Golden Lily Pad Token ID = 1
+    function balanceOf(address account, uint256 id) external view returns (uint256);
+}
+
+// address : 0xfdffd2208aa128a2f9dc520a2a4e93746b588209
+interface IFroggySoulbounds {
+    //Froggy Minter Token ID = 1
+    //One Year Anniversary Holder Token ID = 2
+    function balanceOf(address account, uint256 id) external view returns (uint256);
+}
+
+contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable, ERC2981Upgradeable, ONFT721Upgradeable {
     using StringsUpgradeable for uint256;
     string public froggyUrl;
     uint256 public maxSupply;
     uint256 private _totalMinted;
+
+    ITadpole public tadpole;
+
+    address public tadpoleSender;
+
+    IRibbitItem public constant ribbitItem = IRibbitItem(0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3);
+
+    IFroggySoulbounds public constant froggySoulbounds = IFroggySoulbounds(0xFdFFd2208AA128A2F9dc520A2A4E93746B588209);
+
+    // owner  => HibernationStatus
+    mapping(address => HibernationStatus) public lockStatus;
+
+    // owner => block.timestamp(now)
+    mapping(address => uint256) public HibernationDate;
+
+    // HibernationStatus => tadpole amount for HibernationStatus for hibernating one froggy
+    mapping(HibernationStatus => uint256) public statusTadpoleAmount;
+
+    // tokenAddress => tokrnId => rate
+    mapping(address => mapping(uint256 => uint256)) public TokenBoostRate;
+
+    // HibernationStatus => isAvailable
+    mapping(HibernationStatus => bool) public lockStatusAvailability;
+
+    enum HibernationStatus {
+        AWAKE,
+        THIRTYDAY,
+        SIXTYDAY,
+        NINETYDAY
+    }
+
+    event LogHibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
+
+    event LogAwake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
+
     
     function initialize(uint256 _minGasToTransfer, address _lzEndpoint) initializer public {
         __ONFT721Upgradeable_init("Froggy Friends", "FROGGY", _minGasToTransfer, _lzEndpoint);
@@ -75,6 +131,10 @@ contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperato
         return bytes(froggyUrl).length > 0 ? string(abi.encodePacked(froggyUrl, tokenId.toString())) : "";
     }
 
+    function setRoyalties(address receiver, uint96 feeNumerator) external onlyOwner {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
     // =============================================================
     //                      ERC2981 OVERRIDES
     // =============================================================
@@ -87,15 +147,15 @@ contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperato
         super.setApprovalForAll(operator, approved);
     }
 
-    function transferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) ifNotHibernating(tokenId){
+    function transferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
     }
        
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) ifNotHibernating(tokenId){
+    function safeTransferFrom(address from, address to, uint256 tokenId) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) ifNotHibernating(tokenId){
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override(ERC721Upgradeable, IERC721Upgradeable) onlyAllowedOperator(from) {
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
@@ -105,48 +165,11 @@ contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperato
             interfaceId == type(IONFT721Upgradeable).interfaceId || 
             super.supportsInterface(interfaceId)
         );
-		
-		
-		
- // ellie.xyz1991@gmail.com/ : Changed
-
-    // =============================================================
-    //                     upgrade version 1
-    // =============================================================
-
-    ITadpole public tadpole;
-
-    address public tadpoleSender;
-
-    IRibbitItem public constant ribbitItem = IRibbitItem(0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3);
-
-    IFroggySoulbounds public constant froggySoulbounds = IFroggySoulbounds(0xFdFFd2208AA128A2F9dc520A2A4E93746B588209);
-
-    // owner  => HibernationStatus
-    mapping(address => HibernationStatus) public lockStatus;
-
-    // owner => block.timestamp(now)
-    mapping(address => uint256) public HibernationDate;
-
-    // HibernationStatus => tadpole amount for HibernationStatus for hibernating one froggy
-    mapping(HibernationStatus => uint256) public statusTadpoleAmount;
-
-    // tokenAddress => tokrnId => rate
-    mapping(address => mapping(uint256 => uint256)) public TokenBoostRate;
-
-    // HibernationStatus => isAvailable
-    mapping(HibernationStatus => bool) public lockStatusAvailability;
-
-    enum HibernationStatus {
-        AWAKE,
-        THIRTYDAY,
-        SIXTYDAY,
-        NINETYDAY
     }
 
-    event LogHibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
-
-    event LogAwake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
+    // =============================================================
+    //                      HIBERNATION
+    // =============================================================
 
     modifier ifNotHibernating(uint256 _tokenId) {
         require(lockStatus[ownerOf(_tokenId)] == HibernationStatus.AWAKE, "this token has been locked");
@@ -278,26 +301,3 @@ contract FroggyFriends is ONFT721Upgradeable, ERC2981Upgradeable, DefaultOperato
         tadpoleSender = _sender;
     }
 }
-
-interface ITadpole {
-    function transferFrom(address from, address to, uint256 amountOrId) external;
-}
-
-// address : 0x1f6A5CF9366F968C205467BD7a9f382b3454dFB3
-interface IRibbitItem {
-    /// @notice returns the number of ribbit items an account owns
-    /// @param account the address to check the balance of
-    /// @param id the ribbit item id
-    //note: Golden Lily Pad Token ID = 1
-    function balanceOf(address account, uint256 id) external view returns (uint256);
-}
-
-// address : 0xfdffd2208aa128a2f9dc520a2a4e93746b588209
-interface IFroggySoulbounds {
-    //Froggy Minter Token ID = 1
-    //One Year Anniversary Holder Token ID = 2
-    function balanceOf(address account, uint256 id) external view returns (uint256);
-}
-
-// ellie.xyz1991@gmail.com\
-
