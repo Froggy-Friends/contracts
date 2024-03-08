@@ -30,8 +30,9 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
     mapping(HibernationStatus => uint256) public hibernationStatusRate; // HibernationStatus => tadpole amount per frog
     mapping(address => mapping(uint256 => uint256)) public boostRate; // tokenAddress => tokenId => rate
-    mapping(HibernationStatus => bool) public lockStatusAvailability; // HibernationStatus => isAvailable
+    mapping(HibernationStatus => bool) public hibernationAvailable; // HibernationStatus => isAvailable
     enum HibernationStatus { AWAKE, THIRTYDAY, SIXTYDAY, NINETYDAY }
+    // Events
     event Hibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
     event Wake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
     
@@ -104,7 +105,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     }
 
     modifier checkHibernationIsAvailable(HibernationStatus _hibernationStatus) {
-        require(lockStatusAvailability[_hibernationStatus], "Not a valid Hibernation duration.");
+        require(hibernationAvailable[_hibernationStatus], "Not a valid Hibernation duration.");
         _;
     }
 
@@ -209,36 +210,36 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
 
     /**
      * Enable or disable all hibernation duration options
-     * @param _status set to true to enable all hibernation options, false to disable them
+     * @param _available set to true to enable all hibernation options, false to disable them
      */
-    function setAllHibernationsAvailable(bool _status) public onlyOwner {
-        lockStatusAvailability[HibernationStatus.THIRTYDAY] = _status;
-        lockStatusAvailability[HibernationStatus.SIXTYDAY] = _status;
-        lockStatusAvailability[HibernationStatus.NINETYDAY] = _status;
+    function setAllHibernationsAvailable(bool _available) public onlyOwner {
+        hibernationAvailable[HibernationStatus.THIRTYDAY] = _available;
+        hibernationAvailable[HibernationStatus.SIXTYDAY] = _available;
+        hibernationAvailable[HibernationStatus.NINETYDAY] = _available;
     }
 
     /**
      * Enable or disable the 90 day hibernation option
-     * @param _status set to true to enable 90 day hibernation, false to disable the option
+     * @param _available set to true to enable 90 day hibernation, false to disable the option
      */
-    function setNinetydayAvailable(bool _status) public onlyOwner {
-        lockStatusAvailability[HibernationStatus.NINETYDAY] = _status;
+    function setNinetydayAvailable(bool _available) public onlyOwner {
+        hibernationAvailable[HibernationStatus.NINETYDAY] = _available;
     }
 
     /**
      * Enable or disable the 60 day hibernation option
-     * @param _status set to true to enable 60 day hibernation, false to disable the option
+     * @param _available set to true to enable 60 day hibernation, false to disable the option
      */
-    function setSixtydayAvailable(bool _status) public onlyOwner {
-        lockStatusAvailability[HibernationStatus.SIXTYDAY] = _status;
+    function setSixtydayAvailable(bool _available) public onlyOwner {
+        hibernationAvailable[HibernationStatus.SIXTYDAY] = _available;
     }
 
     /**
      * Enable or disable the 30 day hibernation option
-     * @param _status set to true to enable 30 day hibernation, false to disable the option
+     * @param _available set to true to enable 30 day hibernation, false to disable the option
      */
-    function setThirtydayAvailable(bool _status) public onlyOwner {
-        lockStatusAvailability[HibernationStatus.THIRTYDAY] = _status;
+    function setThirtydayAvailable(bool _available) public onlyOwner {
+        hibernationAvailable[HibernationStatus.THIRTYDAY] = _available;
     }
 
     /**
