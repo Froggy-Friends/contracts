@@ -26,7 +26,6 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     address public tadpoleSender;
     IRibbitItem public ribbitItem;
     IFroggySoulbounds public froggySoulbounds;
-    mapping(uint8 => bytes32) roots; // boost merkle roots
     mapping(address => HibernationStatus) public hibernationStatus; // owner  => HibernationStatus
     mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
     mapping(HibernationStatus => uint256) public hibernationStatusRate; // HibernationStatus => tadpole amount per frog
@@ -36,6 +35,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     // Events
     event Hibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
     event Wake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
+    mapping(uint8 => bytes32) roots; // boost merkle roots
     
     function initialize(uint256 _minGasToTransfer, address _lzEndpoint) initializer public {
         __ONFT721Upgradeable_init("Froggy Friends", "FROGGY", _minGasToTransfer, _lzEndpoint);
