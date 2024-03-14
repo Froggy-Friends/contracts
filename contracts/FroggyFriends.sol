@@ -131,7 +131,7 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     function wake(bytes32[][] memory _proofs) public returns (bool) {
         require(hibernationDate[msg.sender] > 0, "Your frogs are not currently Hibernating.");
         require(block.timestamp > getUnlockTimestamp(msg.sender), "Your Hibernation period has not ended.");
-        uint256 _tadpoleAmount = _calculateTotalRewardAmount(_proofs); // calculate total reward amount includes base rate + boosts
+        uint256 _tadpoleAmount = calculateTotalRewardAmount(_proofs); // calculate total reward amount includes base rate + boosts
         tadpole.transferFrom(tadpoleSender, msg.sender, _tadpoleAmount);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, _tadpoleAmount);
@@ -155,43 +155,26 @@ contract FroggyFriends is OwnableUpgradeable, DefaultOperatorFiltererUpgradeable
     }
 
     /**
-     * Calculates total rewards including all frogs held * (base rate + boosts)
-     */
-    function _calculateTotalRewardAmount(bytes32[][] memory _proofs) internal view returns (uint256) {
-        return _getRewardPerFroggy(_proofs) * balanceOf(msg.sender);
-    }
-
-    /**
-     * Calculates tadpole rewards per frog including (base rate + boosts)
-     */
-    function _getRewardPerFroggy(bytes32[][] memory _proofs) internal view returns (uint256) {
-        return (hibernationStatusRate[hibernationStatus[msg.sender]]) + _calculateTotalBoostedTadpoles(_proofs);
-    }
-
-    /**
-     * Calculates total tadpole boost including (hibernation duration rate * boost) / 100.
-     * The hibernation duration (30,60,90) rate should be a flat number.
-     */
-    function _calculateTotalBoostedTadpoles(bytes32[][] memory _proofs) internal view returns (uint256) {
-        return (hibernationStatusRate[hibernationStatus[msg.sender]] * _calculateTotalBoost(_proofs)) / 100;
-    }
-
-    /**
-     * Calculates total boost percentage for the holder by adding all available boost percentages.
+     * Calculates total rewards including all frogs owned and boosts
      * Boost number mapping
      * 0 = Golden Lily Pad
      * 1 = Froggy Minter SBT
      * 2 = One Year Anniversary SBT
      */
-    function _calculateTotalBoost(bytes32[][] memory _proofs) internal view returns (uint256) {
+    function calculateTotalRewardAmount(bytes32[][] memory _proofs) public view returns (uint256) {
         require(_proofs.length == 3, "Must supply all boost proofs");
         uint256 boost;
 
         if (_verifyProof(_proofs[0], roots[0])) boost += boostRate[address(ribbitItem)][1]; // Golden Lily Pad
         if (_verifyProof(_proofs[1], roots[1])) boost += boostRate[address(froggySoulbounds)][1]; // Froggy Minter SBT
         if (_verifyProof(_proofs[2], roots[2])) boost += boostRate[address(froggySoulbounds)][2]; // Froggy One Year Holder SBT
-        
-        return boost;
+
+        // Calculates total tadpole boost including (hibernation duration rate * boost) / 100.
+        // The hibernation duration (30,60,90) rate should be a flat number.
+        uint256 totalBoostedTadpoles = (hibernationStatusRate[hibernationStatus[msg.sender]] * boost) / 100;
+        // Calculates tadpole rewards per frog including (base rate + boosts)
+        uint256 rewardsPerFroggy = (hibernationStatusRate[hibernationStatus[msg.sender]]) + totalBoostedTadpoles;
+        return rewardsPerFroggy * balanceOf(msg.sender);
     }
 
     function _verifyProof(bytes32[] memory _proof, bytes32 _root) internal view returns (bool) {
