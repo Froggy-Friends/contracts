@@ -263,7 +263,7 @@ contract FroggyFriends is
 
     // changed : i made it public so maybe teammates needs to test the proof generating algorithm
     // for mainnet it better be private
-    function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) public view returns (bool) {
+    function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) public pure returns (bool) {
         return MerkleProofUpgradeable.verify(_proof, _root, keccak256(abi.encodePacked(_holder)));
     }
 
@@ -274,7 +274,7 @@ contract FroggyFriends is
      */
     function setTadpoleReward(HibernationStatus _status, uint256 _amount) public onlyOwner {
         // argument "_amount" should be considered as 16 decimals
-        // argument "_amount" should be multiplied by 10**16
+        // example: for 0.1 $TADPOLE the arguemnt for _amount should be 1000000000000000
         hibernationStatusRate[_status] = _amount * 100;
     }
 
@@ -317,58 +317,5 @@ contract FroggyFriends is
      */
     function setBoostRoot(SoulBound _soulBound, bytes32 _root) public onlyOwner {
         roots[_soulBound] = _root;
-    }
-
-    ////////////////  changed these meant to be here ONLY FOR TEST ///////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Calculates tadpole rewards per frog including (base rate + boosts)
-     * Note : only for unit test - should be removed for the mainnet deploy
-     */
-
-    function _getRewardPerFroggy(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
-        return (hibernationStatusRate[hibernationStatus[_holder]]) + _calculateTotalBoostedTadpoles(_proofs, _holder);
-    }
-
-    /**
-     * Calculates total tadpole boost including (hibernation duration rate * boost) / 100.
-     * The hibernation duration (30,60,90) rate should be a flat number.
-     * Note : only for unit test - should be removed for the mainnet deploy
-     */
-    function _calculateTotalBoostedTadpoles(bytes32[][] memory _proofs, address _holder)
-        public
-        view
-        returns (uint256)
-    {
-        return (hibernationStatusRate[hibernationStatus[_holder]] * _calculateTotalBoost(_proofs, _holder)) / 100;
-    }
-
-    /**
-     * Calculates total boost percentage for the holder by adding all available boost percentages.
-     * Boost number mapping
-     * 0 = Golden Lily Pad
-     * 1 = Froggy Minter SBT
-     * 2 = One Year Anniversary SBT
-     * Note : only for unit test - should be removed for the mainnet deploy
-     */
-    function _calculateTotalBoost(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
-        require(_proofs.length == 3, "Must supply all boost proofs");
-        uint256 boost;
-        // Golden Lily Pad
-        if (_verifyProof(_proofs[0], roots[SoulBound.GOLDENLILYPAD], _holder)) {
-            boost += boostRate[SoulBound.GOLDENLILYPAD];
-        }
-        // Froggy Minter SBT
-        if (_verifyProof(_proofs[1], roots[SoulBound.FROGGYMINTERSBT], _holder)) {
-            boost += boostRate[SoulBound.FROGGYMINTERSBT];
-        }
-
-        // Froggy One Year Holder SBT
-        if (_verifyProof(_proofs[2], roots[SoulBound.ONEYEARANNIVERSARYSBT], _holder)) {
-            boost += boostRate[SoulBound.ONEYEARANNIVERSARYSBT];
-        }
-
-        return boost;
     }
 }
