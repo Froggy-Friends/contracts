@@ -30,33 +30,15 @@ contract FroggyFriends is
     uint256 private _totalMinted;
 
     // Hibernation
-
-    //Note :  please set value for this variable before deploy
-    ITadpole public constant tadpole = ITadpole(0xF7DB5236d5Cef9DC19B09A1B6B570993B7ceAB9f);
-
-    //Note :  please set value for this variable before deploy
+    ITadpole public constant tadpole = ITadpole(0xeCd48F326e70388D993694De59B4542cE8aF7649);
     address public constant tadpoleSender = 0x6b01aD68aB6F53128B7A6Fe7E199B31179A4629a;
-    /* 
-    * changed we use merkle proof we dont need address of these contracts ...read the Note above SoulBound enum
-    * important note: removing or adding these state variables ARE NOT ALLOWED due to storage overriding. but we still on testnet:) 
-    * if it is needed then we declare it as constant so above we should changed ITadpole and tadpoleSender to constant for 
-    * mainnet and i recomend we do the same for finnal testnet deployment as the storage layout should be the same
-    * for better and near to real test results
-    */
-    // IRibbitItem public ribbitItem;
-    // IFroggySoulbounds public froggySoulbounds;
+
     mapping(address => HibernationStatus) public hibernationStatus; // owner  => HibernationStatus
     mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
     mapping(HibernationStatus => uint256) public hibernationStatusRate; // HibernationStatus => tadpole amount per frog
-    /* 
-    * changed this mapping due to declaration of SoulBound enum 
-    */
-    mapping(SoulBound => uint256) public boostRate; // SoulBound => rate
+    mapping(Boost => uint256) public boostRate; // Boost => rate
     mapping(HibernationStatus => bool) public hibernationAvailable; // HibernationStatus => isAvailable
-    /* 
-    * changed this mapping due to declaration of SoulBound enum 
-    */
-    mapping(SoulBound => bytes32) roots; // boost merkle roots
+    mapping(Boost => bytes32) roots; // boost merkle roots
 
     enum HibernationStatus {
         AWAKE,
@@ -64,13 +46,8 @@ contract FroggyFriends is
         SIXTYDAY,
         NINETYDAY
     }
-    // Note : since we decided to use merkle proof for holder's boost tokens, for the sake of reducing gas cost, we no longer
-    //call on each soulbound's contract. so we dont need the contract address and tokenId as key for boostRate mapping above
-    // * 0 = Golden Lily Pad
-    //  * 1 = Froggy Minter SBT
-    //  * 2 = One Year Anniversary SBT
 
-    enum SoulBound {
+    enum Boost {
         GOLDENLILYPAD,
         FROGGYMINTERSBT,
         ONEYEARANNIVERSARYSBT
@@ -205,7 +182,7 @@ contract FroggyFriends is
         require(hibernationDate[msg.sender] > 0, "Your frogs are not currently Hibernating.");
         require(block.timestamp >= getUnlockTimestamp(msg.sender), "Your Hibernation period has not ended.");
         require(_proofs.length == 3, "Must supply all boost proofs");
-        uint256 tadpoleAmount_ = calculateTotalRewardAmount(_proofs, msg.sender); // calculate total reward amount includes base rate + boosts
+        uint256 tadpoleAmount_ = calculateTotalRewardAmount(_proofs, msg.sender);
         tadpole.transferFrom(tadpoleSender, msg.sender, tadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, tadpoleAmount_);
@@ -213,81 +190,61 @@ contract FroggyFriends is
     }
 
     /**
-     * note : for reducing codesize we better merge getLockDuration inside this function but for test
-     * and maybe frontend. so i leave it the way it is
-     *
+     * Returns the unlock date to wake frogs from hibernation for a holder
      * @param _holder address of holder to query
      * @return unlockTimestamp hibernation completion date in seconds
      */
     function getUnlockTimestamp(address _holder) public view returns (uint256) {
-        return getLockDuration(_holder) + hibernationDate[_holder];
+        uint256 lockDuration = (uint8(hibernationStatus[_holder]) * 30) * (24 * 60 * 60); // (number of hibernate days) * each day
+        return lockDuration + hibernationDate[_holder];
     }
 
     /**
-     * @param _holder address of holder to query
-     * @return lockDuration total hibernation duration in seconds
-     */
-    function getLockDuration(address _holder) public view returns (uint256) {
-        return (uint8(hibernationStatus[_holder]) * 30) * (24 * 60 * 60); // (number of hibernate days) * each day
-    }
-
-    /**
-     * Note : I've merged the calculations functions for the sake of codesize but this does not help us with unit test
-     * for unit test writing more modular way will help us to see where the bug sits.so i keep other functions only for
-     * test and should be deleted for mainnet deply
-     *
-     * Calculates total rewards including all frogs owned and boosts
-     * Calculates total boost percentage for the holder by adding all available boost percentages.
-     * Boost number mapping
-     * 0 = Golden Lily Pad
-     * 1 = Froggy Minter SBT
-     * 2 = One Year Anniversary SBT
+     * Calculates total rewards for hibernation chosen by holder.
+     * Reward is number of frogs owned multiplied by the duration rate and boosts
+     * @param _proofs merkle proofs array for boost ownership
+     * @param _holder holder address
      */
     function calculateTotalRewardAmount(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
         uint256 totalBoost_;
-        if (_verifyProof(_proofs[0], roots[SoulBound.GOLDENLILYPAD], _holder)) {
-            totalBoost_ += boostRate[SoulBound.GOLDENLILYPAD];
-        } // Golden Lily Pad
-        if (_verifyProof(_proofs[1], roots[SoulBound.FROGGYMINTERSBT], _holder)) {
-            totalBoost_ += boostRate[SoulBound.FROGGYMINTERSBT];
-        } // Froggy Minter SBT
-        if (_verifyProof(_proofs[2], roots[SoulBound.ONEYEARANNIVERSARYSBT], _holder)) {
-            totalBoost_ += boostRate[SoulBound.ONEYEARANNIVERSARYSBT];
-        } // Froggy One Year Holder SBT
-            //Calculates total tadpole boost including (hibernation duration rate * boost) / 100. The hibernation duration (30,60,90) rate should be a flat number.
+        if (verifyProof(_proofs[0], roots[Boost.GOLDENLILYPAD], _holder)) { // Golden Lily Pad
+            totalBoost_ += boostRate[Boost.GOLDENLILYPAD];
+        }
+        if (verifyProof(_proofs[1], roots[Boost.FROGGYMINTERSBT], _holder)) { // Froggy Minter SBT
+            totalBoost_ += boostRate[Boost.FROGGYMINTERSBT];
+        } 
+        if (verifyProof(_proofs[2], roots[Boost.ONEYEARANNIVERSARYSBT], _holder)) { // Froggy One Year Holder SBT
+            totalBoost_ += boostRate[Boost.ONEYEARANNIVERSARYSBT];
+        }
+        // Calculates total tadpole boost including (hibernation duration rate * boost) / 100. 
+        // The hibernation duration (30,60,90) rate should be a flat number.
         uint256 totalBoostedTadpoles_ = (hibernationStatusRate[hibernationStatus[_holder]] * totalBoost_) / 100;
-        //Calculates tadpole rewards per frog including (base rate + boosts)
         uint256 rewardsPerFroggy_ = (hibernationStatusRate[hibernationStatus[_holder]]) + totalBoostedTadpoles_;
         return rewardsPerFroggy_ * balanceOf(_holder);
     }
 
-    // changed : i made it public so maybe teammates needs to test the proof generating algorithm
-    // for mainnet it better be private
-    function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) public pure returns (bool) {
+    // Note: change to private for mainnet
+    function verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) public pure returns (bool) {
         return MerkleProofUpgradeable.verify(_proof, _root, keccak256(abi.encodePacked(_holder)));
     }
 
     /**
      * Sets the hibernation duration rate
+     * Amount is passed as 16 decimal number and saved as 18 decimal number
      * @param _status the hibernation duration i.e. 1 = 30 days, 2 = 60 days, 3 = 90 days
-     * @param _amount the tadpole base rate for the hibernation duration
+     * @param _amount the tadpole base rate in 16 decimails i.e. for 0.1$ TADPOLE pass the value 1000000000000000
      */
     function setTadpoleReward(HibernationStatus _status, uint256 _amount) public onlyOwner {
-        // argument "_amount" should be considered as 16 decimals
-        // example: for 0.1 $TADPOLE the arguemnt for _amount should be 1000000000000000
         hibernationStatusRate[_status] = _amount * 100;
     }
 
     /**
-     * changed
      * Sets the boost rate
-     * @param _soulBound the soulBound enum value
-     * @param _rate the boost rate flat number i.e. set 10 for 10% representation
+     * @param _boost the boost enum value
+     * @param _rate the boost rate flat number i.e. for 10% pass the value 10
      */
-    function setBoostRate(SoulBound _soulBound, uint256 _rate) public onlyOwner {
-        // argument "_rate" should not be in percentage.
-        // example: for 10%  the argument for "_rate" should be 10
-        boostRate[_soulBound] = _rate;
+    function setBoostRate(Boost _boost, uint256 _rate) public onlyOwner {
+        boostRate[_boost] = _rate;
     }
 
     /**
@@ -307,15 +264,11 @@ contract FroggyFriends is
 
     /**
      * changed
-     * Sets merkle roots for boost holders
-     * Boost number mapping (boost ids should match ids in roots map)
-     * 0 = Golden Lily Pad
-     * 1 = Froggy Minter SBT
-     * 2 = One Year Anniversary SBT
-     * @param _soulBound the soulBound enum value
+     * Sets merkle root for boost
+     * @param _boost the Boost enum value
      * @param _root the boost merkle root
      */
-    function setBoostRoot(SoulBound _soulBound, bytes32 _root) public onlyOwner {
-        roots[_soulBound] = _root;
+    function setBoostRoot(Boost _boost, bytes32 _root) public onlyOwner {
+        roots[_boost] = _root;
     }
 }
