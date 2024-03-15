@@ -10,11 +10,11 @@ const { ALCHEMY_API_KEY_HOLESKY, ALCHEMY_API_KEY_STG, ALCHEMY_API_KEY, PRIVATE_K
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.18",
+    version: "0.8.24",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 800,
+        runs: 200,
       },
     },
   },
