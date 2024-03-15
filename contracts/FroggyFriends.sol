@@ -42,15 +42,15 @@ contract FroggyFriends is
 
     enum HibernationStatus {
         AWAKE,
-        THIRTYDAY,
-        SIXTYDAY,
-        NINETYDAY
+        THIRTY_DAYS,
+        SIXTY_DAYS,
+        NINETY_DAYS
     }
 
     enum Boost {
-        GOLDENLILYPAD,
-        FROGGYMINTERSBT,
-        ONEYEARANNIVERSARYSBT
+        GOLDEN_LILY_PAD,
+        FROGGY_MINTER_SBT,
+        ONE_YEAR_ANNIVERSARY_SBT
     }
 
     // Events
@@ -77,8 +77,7 @@ contract FroggyFriends is
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return
-            bytes(froggyUrl).length > 0 ? string(abi.encodePacked(froggyUrl, StringsUpgradeable.toString(tokenId))) : "";
+        return string(abi.encodePacked(froggyUrl, StringsUpgradeable.toString(tokenId)));
     }
 
     function setRoyalties(address receiver, uint96 feeNumerator) external onlyOwner {
@@ -207,23 +206,21 @@ contract FroggyFriends is
      */
     function calculateTotalRewardAmount(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
         uint256 totalBoost_;
-        if (verifyProof(_proofs[0], roots[Boost.GOLDENLILYPAD], _holder)) { // Golden Lily Pad
-            totalBoost_ += boostRate[Boost.GOLDENLILYPAD];
+        if (verifyProof(_proofs[0], roots[Boost.GOLDEN_LILY_PAD], _holder)) {
+            totalBoost_ += boostRate[Boost.GOLDEN_LILY_PAD];
         }
-        if (verifyProof(_proofs[1], roots[Boost.FROGGYMINTERSBT], _holder)) { // Froggy Minter SBT
-            totalBoost_ += boostRate[Boost.FROGGYMINTERSBT];
+        if (verifyProof(_proofs[1], roots[Boost.FROGGY_MINTER_SBT], _holder)) {
+            totalBoost_ += boostRate[Boost.FROGGY_MINTER_SBT];
         } 
-        if (verifyProof(_proofs[2], roots[Boost.ONEYEARANNIVERSARYSBT], _holder)) { // Froggy One Year Holder SBT
-            totalBoost_ += boostRate[Boost.ONEYEARANNIVERSARYSBT];
+        if (verifyProof(_proofs[2], roots[Boost.ONE_YEAR_ANNIVERSARY_SBT], _holder)) {
+            totalBoost_ += boostRate[Boost.ONE_YEAR_ANNIVERSARY_SBT];
         }
         // Calculates total tadpole boost including (hibernation duration rate * boost) / 100. 
-        // The hibernation duration (30,60,90) rate should be a flat number.
         uint256 totalBoostedTadpoles_ = (hibernationStatusRate[hibernationStatus[_holder]] * totalBoost_) / 100;
         uint256 rewardsPerFroggy_ = (hibernationStatusRate[hibernationStatus[_holder]]) + totalBoostedTadpoles_;
         return rewardsPerFroggy_ * balanceOf(_holder);
     }
 
-    // Note: change to private for mainnet
     function verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) public pure returns (bool) {
         return MerkleProofUpgradeable.verify(_proof, _root, keccak256(abi.encodePacked(_holder)));
     }
@@ -257,9 +254,9 @@ contract FroggyFriends is
         public
         onlyOwner
     {
-        hibernationAvailable[HibernationStatus.THIRTYDAY] = _thirdyDayAvailable;
-        hibernationAvailable[HibernationStatus.SIXTYDAY] = _sixtyDayAvailable;
-        hibernationAvailable[HibernationStatus.NINETYDAY] = _ninetyDayAvailable;
+        hibernationAvailable[HibernationStatus.THIRTY_DAYS] = _thirdyDayAvailable;
+        hibernationAvailable[HibernationStatus.SIXTY_DAYS] = _sixtyDayAvailable;
+        hibernationAvailable[HibernationStatus.NINETY_DAYS] = _ninetyDayAvailable;
     }
 
     /**
