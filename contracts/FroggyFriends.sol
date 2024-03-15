@@ -215,7 +215,6 @@ contract FroggyFriends is
         if (verifyProof(_proofs[2], roots[Boost.ONE_YEAR_ANNIVERSARY_SBT], _holder)) {
             totalBoost_ += boostRate[Boost.ONE_YEAR_ANNIVERSARY_SBT];
         }
-        // Calculates total tadpole boost including (hibernation duration rate * boost) / 100. 
         uint256 totalBoostedTadpoles_ = (hibernationStatusRate[hibernationStatus[_holder]] * totalBoost_) / 100;
         uint256 rewardsPerFroggy_ = (hibernationStatusRate[hibernationStatus[_holder]]) + totalBoostedTadpoles_;
         return rewardsPerFroggy_ * balanceOf(_holder);
