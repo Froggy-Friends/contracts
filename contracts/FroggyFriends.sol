@@ -197,8 +197,7 @@ contract FroggyFriends is
      * @return unlockTimestamp hibernation completion date in seconds
      */
     function getUnlockTimestamp(address _holder) public view returns (uint256) {
-        uint256 lockDuration = (uint8(hibernationStatus[_holder]) * 30) * (24 * 60 * 60); // (number of hibernate days) * each day
-        return lockDuration + hibernationDate[_holder];
+        return hibernationDate[_holder] + (uint8(hibernationStatus[_holder]) * 30 days);
     }
 
     /**
