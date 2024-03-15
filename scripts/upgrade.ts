@@ -6,8 +6,7 @@ async function main() {
     const [owner] = await ethers.getSigners();
     console.log("\nDeployment Owner: ", owner.address);
 
-    // const froggyFriends = (await upgrades.upgradeProxy('0x586bd2155BDb9E9270439656D2d520A54e6b9448', FroggyFriends, { timeout: 0 })); // holesky
-    const froggyFriends = (await upgrades.upgradeProxy('0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F', FroggyFriends, { timeout: 0 })); //mainnet
+    const froggyFriends = (await upgrades.upgradeProxy('0x29Fe598F004685c15B91E05bb8401062F45E0355', FroggyFriends, { timeout: 0 }));
     console.log("\nUpgraded contract address: ", froggyFriends.address);
 
     await froggyFriends.deployed();
