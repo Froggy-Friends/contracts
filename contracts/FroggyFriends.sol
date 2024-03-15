@@ -108,6 +108,7 @@ contract FroggyFriends is
         public
         override(ERC721Upgradeable, IERC721Upgradeable)
         onlyAllowedOperator(from)
+        ifNotHibernating(tokenId)
     {
         super.transferFrom(from, to, tokenId);
     }
@@ -116,6 +117,7 @@ contract FroggyFriends is
         public
         override(ERC721Upgradeable, IERC721Upgradeable)
         onlyAllowedOperator(from)
+        ifNotHibernating(tokenId)
     {
         super.safeTransferFrom(from, to, tokenId);
     }
@@ -124,6 +126,7 @@ contract FroggyFriends is
         public
         override(ERC721Upgradeable, IERC721Upgradeable)
         onlyAllowedOperator(from)
+        ifNotHibernating(tokenId)
     {
         super.safeTransferFrom(from, to, tokenId, data);
     }
