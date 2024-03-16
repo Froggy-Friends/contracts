@@ -238,12 +238,14 @@ contract FroggyFriends is
     }
 
     /**
-     * Sets the boost rate
+     * Sets the boost rate and root
      * @param _boost the boost enum value
      * @param _rate the boost rate flat number i.e. for 10% pass the value 10
+     * @param _root the boost merkle root
      */
-    function setBoostRate(Boost _boost, uint256 _rate) public onlyOwner {
+    function setBoost(Boost _boost, uint256 _rate, bytes32 _root) public onlyOwner {
         boostRate[_boost] = _rate;
+        roots[_boost] = _root;
     }
 
     /**
@@ -259,15 +261,5 @@ contract FroggyFriends is
         hibernationAvailable[HibernationStatus.THIRTY_DAYS] = _thirdyDayAvailable;
         hibernationAvailable[HibernationStatus.SIXTY_DAYS] = _sixtyDayAvailable;
         hibernationAvailable[HibernationStatus.NINETY_DAYS] = _ninetyDayAvailable;
-    }
-
-    /**
-     * changed
-     * Sets merkle root for boost
-     * @param _boost the Boost enum value
-     * @param _root the boost merkle root
-     */
-    function setBoostRoot(Boost _boost, bytes32 _root) public onlyOwner {
-        roots[_boost] = _root;
     }
 }
