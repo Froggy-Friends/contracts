@@ -17,14 +17,9 @@ import {MerkleProofUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/
 import {ITadpole} from "./Interfaces.sol";
 
 error InvalidSize();
-error OverMaxSupply();
 error InvalidToken();
-error IsHibernating();
 error InvalidHibernationStatus();
-error FrogBalanceZero();
-error NotHibernating();
 error HibernationIncomplete();
-error InvalidProofsLength();
 
 contract FroggyFriends is
     OwnableUpgradeable,
@@ -156,7 +151,7 @@ contract FroggyFriends is
     // =============================================================
 
     modifier ifNotHibernating(uint256 _tokenId) {
-        if (hibernationStatus[ownerOf(_tokenId)] != HibernationStatus.AWAKE) revert IsHibernating();
+        if (hibernationStatus[ownerOf(_tokenId)] != HibernationStatus.AWAKE) revert InvalidHibernationStatus();
         _;
     }
 
@@ -175,7 +170,7 @@ contract FroggyFriends is
         checkHibernationIsAvailable(_hibernationStatus)
         returns (bool)
     {
-        if (balanceOf(msg.sender) == 0) revert FrogBalanceZero();
+        if (balanceOf(msg.sender) == 0) revert InvalidSize();
         hibernationStatus[msg.sender] = _hibernationStatus;
         hibernationDate[msg.sender] = block.timestamp;
         emit Hibernate(msg.sender, block.timestamp, _hibernationStatus);
@@ -187,9 +182,9 @@ contract FroggyFriends is
      * @return true when wake is complete
      */
     function wake(bytes32[][] memory _proofs) public returns (bool) {
-        if (hibernationDate[msg.sender] == 0) revert NotHibernating();
+        if (hibernationDate[msg.sender] == 0) revert InvalidHibernationStatus();
         if (block.timestamp < getUnlockTimestamp(msg.sender)) revert HibernationIncomplete();
-        if (_proofs.length < 3) revert InvalidProofsLength();
+        if (_proofs.length < 3) revert InvalidSize();
         uint256 tadpoleAmount_ = calculateTotalRewardAmount(_proofs, msg.sender);
         tadpole.transferFrom(tadpoleSender, msg.sender, tadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
