@@ -78,7 +78,7 @@ contract FroggyFriends is
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        if (_exists(tokenId) == false) revert InvalidToken();
+        if (!_exists(tokenId)) revert InvalidToken();
         return string(abi.encodePacked(froggyUrl, StringsUpgradeable.toString(tokenId)));
     }
 
