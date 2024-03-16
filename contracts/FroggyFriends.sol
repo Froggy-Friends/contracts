@@ -17,7 +17,9 @@ import {MerkleProofUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/
 import {ITadpole} from "./Interfaces.sol";
 
 error InvalidSize();
-error OverMaxSupply();
+error InvalidToken();
+error InvalidHibernationStatus();
+error HibernationIncomplete();
 
 contract FroggyFriends is
     OwnableUpgradeable,
@@ -76,7 +78,7 @@ contract FroggyFriends is
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        if (!_exists(tokenId)) revert InvalidToken();
         return string(abi.encodePacked(froggyUrl, StringsUpgradeable.toString(tokenId)));
     }
 
@@ -149,12 +151,12 @@ contract FroggyFriends is
     // =============================================================
 
     modifier ifNotHibernating(uint256 _tokenId) {
-        require(hibernationStatus[ownerOf(_tokenId)] == HibernationStatus.AWAKE, "Frog is currently Hibernating.");
+        if (hibernationStatus[ownerOf(_tokenId)] != HibernationStatus.AWAKE) revert InvalidHibernationStatus();
         _;
     }
 
     modifier checkHibernationIsAvailable(HibernationStatus _hibernationStatus) {
-        require(hibernationAvailable[_hibernationStatus], "Hibernation choice is unavailable.");
+        if (!hibernationAvailable[_hibernationStatus]) revert InvalidHibernationStatus();
         _;
     }
 
@@ -168,8 +170,7 @@ contract FroggyFriends is
         checkHibernationIsAvailable(_hibernationStatus)
         returns (bool)
     {
-        uint256 _balances = balanceOf(msg.sender);
-        require(_balances > 0, "Frog balance is zero.");
+        if (balanceOf(msg.sender) == 0) revert InvalidSize();
         hibernationStatus[msg.sender] = _hibernationStatus;
         hibernationDate[msg.sender] = block.timestamp;
         emit Hibernate(msg.sender, block.timestamp, _hibernationStatus);
@@ -181,9 +182,9 @@ contract FroggyFriends is
      * @return true when wake is complete
      */
     function wake(bytes32[][] memory _proofs) public returns (bool) {
-        require(hibernationDate[msg.sender] > 0, "Your frogs are not currently Hibernating.");
-        require(block.timestamp >= getUnlockTimestamp(msg.sender), "Your Hibernation period has not ended.");
-        require(_proofs.length == 3, "Must supply all boost proofs");
+        if (hibernationDate[msg.sender] == 0) revert InvalidHibernationStatus();
+        if (block.timestamp < getUnlockTimestamp(msg.sender)) revert HibernationIncomplete();
+        if (_proofs.length < 3) revert InvalidSize();
         uint256 tadpoleAmount_ = calculateTotalRewardAmount(_proofs, msg.sender);
         tadpole.transferFrom(tadpoleSender, msg.sender, tadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
@@ -197,7 +198,7 @@ contract FroggyFriends is
      * @return unlockTimestamp hibernation completion date in seconds
      */
     function getUnlockTimestamp(address _holder) public view returns (uint256) {
-        return hibernationDate[_holder] + (uint8(hibernationStatus[_holder]) * 30 days);
+        return hibernationDate[_holder] + (uint256(hibernationStatus[_holder]) * 30 days);
     }
 
     /**
@@ -208,13 +209,13 @@ contract FroggyFriends is
      */
     function calculateTotalRewardAmount(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
         uint256 totalBoost_;
-        if (verifyProof(_proofs[0], roots[Boost.GOLDEN_LILY_PAD], _holder)) {
+        if (_verifyProof(_proofs[0], roots[Boost.GOLDEN_LILY_PAD], _holder)) {
             totalBoost_ += boostRate[Boost.GOLDEN_LILY_PAD];
         }
-        if (verifyProof(_proofs[1], roots[Boost.FROGGY_MINTER_SBT], _holder)) {
+        if (_verifyProof(_proofs[1], roots[Boost.FROGGY_MINTER_SBT], _holder)) {
             totalBoost_ += boostRate[Boost.FROGGY_MINTER_SBT];
         } 
-        if (verifyProof(_proofs[2], roots[Boost.ONE_YEAR_ANNIVERSARY_SBT], _holder)) {
+        if (_verifyProof(_proofs[2], roots[Boost.ONE_YEAR_ANNIVERSARY_SBT], _holder)) {
             totalBoost_ += boostRate[Boost.ONE_YEAR_ANNIVERSARY_SBT];
         }
         uint256 totalBoostedTadpoles_ = (hibernationStatusRate[hibernationStatus[_holder]] * totalBoost_) / 100;
@@ -222,7 +223,7 @@ contract FroggyFriends is
         return rewardsPerFroggy_ * balanceOf(_holder);
     }
 
-    function verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) public pure returns (bool) {
+    function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) internal pure returns (bool) {
         return MerkleProofUpgradeable.verify(_proof, _root, keccak256(abi.encodePacked(_holder)));
     }
 

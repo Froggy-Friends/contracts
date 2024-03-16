@@ -3,6 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-deploy";
+import "hardhat-contract-sizer";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -61,6 +62,13 @@ const config: HardhatUserConfig = {
   typechain: {
     outDir: "types",
     target: "ethers-v5"
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
+    only: [],
   }
 };
 
