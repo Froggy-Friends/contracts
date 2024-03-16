@@ -37,7 +37,7 @@ contract FroggyFriends is
     uint256 private _totalMinted;
 
     // Hibernation
-    ITadpole public constant tadpole = ITadpole(0xF7DB5236d5Cef9DC19B09A1B6B570993B7ceAB9f);
+    ITadpole public constant tadpole = ITadpole(0xeCd48F326e70388D993694De59B4542cE8aF7649);
     address public constant tadpoleSender = 0x6b01aD68aB6F53128B7A6Fe7E199B31179A4629a;
 
     mapping(address => HibernationStatus) public hibernationStatus; // owner  => HibernationStatus
