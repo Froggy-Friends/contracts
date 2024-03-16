@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "compile": "npx hardhat compile",
+    "size": "npx hardhat size-contracts",
     "airdrop": "npx hardhat run scripts/airdrop.ts --network mainnet",
     "deploy": "npx hardhat run scripts/deploy.ts --network mainnet",
     "upgrade": "npx hardhat run scripts/upgrade.ts --network mainnet",
@@ -37,6 +38,7 @@
   "dependencies": {
     "@layerzerolabs/solidity-examples": "^0.0.13",
     "@openzeppelin/contracts-upgradeable": "^4.9.2",
+    "hardhat-contract-sizer": "^2.10.0",
     "operator-filter-registry": "^1.4.2"
   }
 }
