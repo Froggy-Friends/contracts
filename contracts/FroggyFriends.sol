@@ -56,8 +56,10 @@ contract FroggyFriends is
     }
 
     // Events
-    event Hibernate(address indexed _owner, uint256 indexed _lockDate, HibernationStatus indexed _HibernationStatus);
-    event Wake(address indexed _owner, uint256 indexed _lockDate, uint256 indexed _tadpoleAmount);
+    event Hibernate(
+        address indexed _holder, uint256 indexed _hibernateDate, HibernationStatus indexed _HibernationStatus
+    );
+    event Wake(address indexed _holder, uint256 indexed _wakeDate, uint256 indexed _tadpoleAmount);
 
     function initialize(uint256 _minGasToTransfer, address _lzEndpoint) public initializer {
         __ONFT721Upgradeable_init("Froggy Friends", "FROGGY", _minGasToTransfer, _lzEndpoint);
@@ -163,33 +165,25 @@ contract FroggyFriends is
     /**
      * Hibernates for the chosen amount of time
      * @param _hibernationStatus 1 = 30 days, 2 = 60 days, 3 = 90 days
-     * @return true when hibernation is complete
      */
-    function hibernate(HibernationStatus _hibernationStatus)
-        public
-        checkHibernationIsAvailable(_hibernationStatus)
-        returns (bool)
-    {
-        if (balanceOf(msg.sender) == 0) revert InvalidSize();
+    function hibernate(HibernationStatus _hibernationStatus) external checkHibernationIsAvailable(_hibernationStatus) {
+        if (balanceOf(msg.sender) == 0 || hibernationDate[msg.sender] > 0) revert InvalidSize();
         hibernationStatus[msg.sender] = _hibernationStatus;
         hibernationDate[msg.sender] = block.timestamp;
         emit Hibernate(msg.sender, block.timestamp, _hibernationStatus);
-        return true;
     }
 
     /**
      * Wakes frogs from hibernation and distributes tadpole rewards to holder
-     * @return true when wake is complete
      */
-    function wake(bytes32[][] memory _proofs) public returns (bool) {
+    function wake(bytes32[][] memory _proofs) external {
         if (hibernationDate[msg.sender] == 0) revert InvalidHibernationStatus();
-        if (block.timestamp < getUnlockTimestamp(msg.sender)) revert HibernationIncomplete();
-        if (_proofs.length < 3) revert InvalidSize();
-        uint256 tadpoleAmount_ = calculateTotalRewardAmount(_proofs, msg.sender);
-        tadpole.transferFrom(tadpoleSender, msg.sender, tadpoleAmount_);
+        if (getUnlockTimestamp(msg.sender) > block.timestamp) revert HibernationIncomplete();
+        if (_proofs.length > 3) revert InvalidSize();
+        uint256 totalTadpoleAmount_ = _calculateRewardPerFroggy(_proofs) * balanceOf(msg.sender);
+        tadpole.transferFrom(tadpoleSender, msg.sender, totalTadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
-        emit Wake(msg.sender, block.timestamp, tadpoleAmount_);
-        return true;
+        emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
     }
 
     /**
@@ -202,28 +196,23 @@ contract FroggyFriends is
     }
 
     /**
-     * Calculates total rewards for hibernation chosen by holder.
+     * Calculates total rewards for hibernation chosen by holder per Froggy.
      * Reward is number of frogs owned multiplied by the duration rate and boosts
      * @param _proofs merkle proofs array for boost ownership
-     * @param _holder holder address
      */
-    function calculateTotalRewardAmount(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
+    function _calculateRewardPerFroggy(bytes32[][] memory _proofs) private view returns (uint256) {
+        uint256 hibernationTadpole_ = hibernationStatusRate[hibernationStatus[msg.sender]];
         uint256 totalBoost_;
-        if (_verifyProof(_proofs[0], roots[Boost.GOLDEN_LILY_PAD], _holder)) {
-            totalBoost_ += boostRate[Boost.GOLDEN_LILY_PAD];
+        for (uint256 index = 0; index < _proofs.length; index++) {
+            if (_proofs[index].length > 0 && _verifyProof(_proofs[index], roots[Boost(index)], msg.sender)) {
+                totalBoost_ += boostRate[Boost(index)];
+            }
         }
-        if (_verifyProof(_proofs[1], roots[Boost.FROGGY_MINTER_SBT], _holder)) {
-            totalBoost_ += boostRate[Boost.FROGGY_MINTER_SBT];
-        } 
-        if (_verifyProof(_proofs[2], roots[Boost.ONE_YEAR_ANNIVERSARY_SBT], _holder)) {
-            totalBoost_ += boostRate[Boost.ONE_YEAR_ANNIVERSARY_SBT];
-        }
-        uint256 totalBoostedTadpoles_ = (hibernationStatusRate[hibernationStatus[_holder]] * totalBoost_) / 100;
-        uint256 rewardsPerFroggy_ = (hibernationStatusRate[hibernationStatus[_holder]]) + totalBoostedTadpoles_;
-        return rewardsPerFroggy_ * balanceOf(_holder);
+
+        return hibernationTadpole_ + ((hibernationTadpole_ * totalBoost_) / 100); // hibernationTadpole_ + totalBoostedTadpoles_
     }
 
-    function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) internal pure returns (bool) {
+    function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) private pure returns (bool) {
         return MerkleProofUpgradeable.verify(_proof, _root, keccak256(abi.encodePacked(_holder)));
     }
 
@@ -233,7 +222,7 @@ contract FroggyFriends is
      * @param _status the hibernation duration i.e. 1 = 30 days, 2 = 60 days, 3 = 90 days
      * @param _amount the tadpole base rate in 16 decimails i.e. for 0.1$ TADPOLE pass the value 1000000000000000
      */
-    function setTadpoleReward(HibernationStatus _status, uint256 _amount) public onlyOwner {
+    function setTadpoleReward(HibernationStatus _status, uint256 _amount) external onlyOwner {
         hibernationStatusRate[_status] = _amount * 100;
     }
 
@@ -243,7 +232,7 @@ contract FroggyFriends is
      * @param _rate the boost rate flat number i.e. for 10% pass the value 10
      * @param _root the boost merkle root
      */
-    function setBoost(Boost _boost, uint256 _rate, bytes32 _root) public onlyOwner {
+    function setBoost(Boost _boost, uint256 _rate, bytes32 _root) external onlyOwner {
         boostRate[_boost] = _rate;
         roots[_boost] = _root;
     }
@@ -255,7 +244,7 @@ contract FroggyFriends is
      * @param _ninetyDayAvailable set to true to enable 90 day hibernation, false to disable the option
      */
     function setHibernationAvailable(bool _thirdyDayAvailable, bool _sixtyDayAvailable, bool _ninetyDayAvailable)
-        public
+        external
         onlyOwner
     {
         hibernationAvailable[HibernationStatus.THIRTY_DAYS] = _thirdyDayAvailable;
