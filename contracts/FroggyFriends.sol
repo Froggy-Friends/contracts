@@ -20,6 +20,7 @@ error InvalidSize();
 error InvalidToken();
 error InvalidHibernationStatus();
 error HibernationIncomplete();
+error OutOfTadpoles();
 
 contract FroggyFriends is
     OwnableUpgradeable,
@@ -181,9 +182,14 @@ contract FroggyFriends is
         if (getUnlockTimestamp(msg.sender) > block.timestamp) revert HibernationIncomplete();
         if (_proofs.length > 3) revert InvalidSize();
         uint256 totalTadpoleAmount_ = _calculateRewardPerFroggy(_proofs) * balanceOf(msg.sender);
-        tadpole.transferFrom(tadpoleSender, msg.sender, totalTadpoleAmount_);
+        if (totalTadpoleAmount_ > tadpole.balanceOf(address(this))) revert OutOfTadpoles();
+        tadpole.transfer(msg.sender, totalTadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
+    }
+
+    function withdraw(address account) public onlyOwner {
+        tadpole.transfer(account, tadpole.balanceOf(address(this)));
     }
 
     /**
