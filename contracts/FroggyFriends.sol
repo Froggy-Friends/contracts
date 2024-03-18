@@ -180,11 +180,15 @@ contract FroggyFriends is
         if (hibernationDate[msg.sender] == 0) revert InvalidHibernationStatus();
         if (getUnlockTimestamp(msg.sender) > block.timestamp) revert HibernationIncomplete();
         if (_proofs.length > 3) revert InvalidSize();
-        uint256 totalTadpoleAmount_ = _calculateRewardPerFroggy(_proofs) * balanceOf(msg.sender);
+        uint256 totalTadpoleAmount_ = tadpoleRewards(_proofs);
         if (totalTadpoleAmount_ > tadpoleBalanceOf(address(this))) revert OutOfTadpoles();
         tadpole.transfer(msg.sender, totalTadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
+    }
+
+    function tadpoleRewards(bytes32[][] memory _proofs) public view returns (uint256) {
+        return _calculateRewardPerFroggy(_proofs) * balanceOf(msg.sender);
     }
 
     function tadpoleBalanceOf(address account) public view returns (uint256) {
@@ -218,7 +222,7 @@ contract FroggyFriends is
             }
         }
 
-        return hibernationTadpole_ + ((hibernationTadpole_ * totalBoost_) / 100); // hibernationTadpole_ + totalBoostedTadpoles_
+        return hibernationTadpole_ + ((hibernationTadpole_ * totalBoost_) / 100);
     }
 
     function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) private pure returns (bool) {

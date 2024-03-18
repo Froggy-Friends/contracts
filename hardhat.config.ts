@@ -7,7 +7,7 @@ import "hardhat-contract-sizer";
 import dotenv from "dotenv";
 dotenv.config();
 
-const { ALCHEMY_API_KEY_HOLESKY, ALCHEMY_API_KEY, PRIVATE_KEY, ETHERSCAN_API_KEY, COINMARKETCAP_API_KEY } = process.env;
+const { ALCHEMY_API_KEY, ALCHEMY_API_KEY_SEPOLIA, PRIVATE_KEY, ETHERSCAN_API_KEY, COINMARKETCAP_API_KEY } = process.env;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -19,7 +19,7 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  defaultNetwork: "holesky",
+  defaultNetwork: "sepolia",
   networks: {
     hardhat: {
       chainId: 1337
@@ -28,8 +28,8 @@ const config: HardhatUserConfig = {
       url: ALCHEMY_API_KEY,
       accounts: [`0x${PRIVATE_KEY}`],
     },
-    holesky: {
-      url: ALCHEMY_API_KEY_HOLESKY,
+    sepolia: {
+      url: ALCHEMY_API_KEY_SEPOLIA,
       accounts: [`0x${PRIVATE_KEY}`]
     },
     coverage: {
@@ -37,17 +37,7 @@ const config: HardhatUserConfig = {
     }
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
-    customChains: [
-      {
-        network: "sepolia",
-        chainId: 11155111,
-        urls: {
-          apiURL: "https://api-sepolia.etherscan.io/api",
-          browserURL: "https://sepolia.etherscan.io/"
-        }
-      }
-    ]
+    apiKey: ETHERSCAN_API_KEY
   },
   gasReporter: {
     currency: 'USD',
