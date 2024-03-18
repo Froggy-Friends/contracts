@@ -1,4 +1,4 @@
-import { ethers, upgrades } from "hardhat";
+import { ethers, upgrades, run } from "hardhat";
 
 async function main() {
     console.log("Starting deployment...");
@@ -6,7 +6,7 @@ async function main() {
     const [owner] = await ethers.getSigners();
     console.log("\nDeployment Owner: ", owner.address);
 
-    const froggyFriends = (await upgrades.upgradeProxy('0x29Fe598F004685c15B91E05bb8401062F45E0355', FroggyFriends, { timeout: 0 }));
+    const froggyFriends = (await upgrades.upgradeProxy('0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F', FroggyFriends, { timeout: 0 }));
     console.log("\nUpgraded contract address: ", froggyFriends.address);
 
     await froggyFriends.deployed();
@@ -14,6 +14,13 @@ async function main() {
 
     await froggyFriends.deployTransaction.wait(5);
     console.log("\nContract deployed with 5 confirmations");
+
+    console.log('\Verifying contract code on Etherscan...');
+    await run("verify:verify",
+    {
+        address: froggyFriends.address,
+        constructorArguments: []
+    });
 }
 
 main()

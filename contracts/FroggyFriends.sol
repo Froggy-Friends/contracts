@@ -20,6 +20,7 @@ error InvalidSize();
 error InvalidToken();
 error InvalidHibernationStatus();
 error HibernationIncomplete();
+error OutOfTadpoles();
 
 contract FroggyFriends is
     OwnableUpgradeable,
@@ -33,10 +34,10 @@ contract FroggyFriends is
 
     // Hibernation
     ITadpole public constant tadpole = ITadpole(0xeCd48F326e70388D993694De59B4542cE8aF7649);
-    address public constant tadpoleSender = 0x6b01aD68aB6F53128B7A6Fe7E199B31179A4629a;
 
     mapping(address => HibernationStatus) public hibernationStatus; // owner  => HibernationStatus
-    mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
+    mapping(address => uint256) public hibernationOneDate; // owner => block.timestamp(now) for season one
+    mapping(address => uint256) public hibernationTwoDate; // owner => block.timestamp(now) for season two
     mapping(HibernationStatus => uint256) public hibernationStatusRate; // HibernationStatus => tadpole amount per frog
     mapping(Boost => uint256) public boostRate; // Boost => rate
     mapping(HibernationStatus => bool) public hibernationAvailable; // HibernationStatus => isAvailable
@@ -167,9 +168,9 @@ contract FroggyFriends is
      * @param _hibernationStatus 1 = 30 days, 2 = 60 days, 3 = 90 days
      */
     function hibernate(HibernationStatus _hibernationStatus) external checkHibernationIsAvailable(_hibernationStatus) {
-        if (balanceOf(msg.sender) == 0 || hibernationDate[msg.sender] > 0) revert InvalidSize();
+        if (balanceOf(msg.sender) == 0 || hibernationOneDate[msg.sender] > 0) revert InvalidSize();
         hibernationStatus[msg.sender] = _hibernationStatus;
-        hibernationDate[msg.sender] = block.timestamp;
+        hibernationOneDate[msg.sender] = block.timestamp;
         emit Hibernate(msg.sender, block.timestamp, _hibernationStatus);
     }
 
@@ -177,13 +178,21 @@ contract FroggyFriends is
      * Wakes frogs from hibernation and distributes tadpole rewards to holder
      */
     function wake(bytes32[][] memory _proofs) external {
-        if (hibernationDate[msg.sender] == 0) revert InvalidHibernationStatus();
+        if (hibernationStatus[msg.sender] == HibernationStatus.AWAKE) revert InvalidHibernationStatus();
         if (getUnlockTimestamp(msg.sender) > block.timestamp) revert HibernationIncomplete();
         if (_proofs.length > 3) revert InvalidSize();
-        uint256 totalTadpoleAmount_ = _calculateRewardPerFroggy(_proofs) * balanceOf(msg.sender);
-        tadpole.transferFrom(tadpoleSender, msg.sender, totalTadpoleAmount_);
+        uint256 totalTadpoleAmount_ = calculateReward(_proofs, msg.sender);
+        if (totalTadpoleAmount_ > tadpole.balanceOf(address(this))) revert OutOfTadpoles();
+        tadpole.transfer(msg.sender, totalTadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
+    }
+
+    /**
+     * Owner function to withdraw tadpole tokens
+     */
+    function withdraw(address account) public onlyOwner {
+        tadpole.transfer(account, tadpole.balanceOf(address(this)));
     }
 
     /**
@@ -192,7 +201,7 @@ contract FroggyFriends is
      * @return unlockTimestamp hibernation completion date in seconds
      */
     function getUnlockTimestamp(address _holder) public view returns (uint256) {
-        return hibernationDate[_holder] + (uint256(hibernationStatus[_holder]) * 30 days);
+        return hibernationOneDate[_holder] + (uint256(hibernationStatus[_holder]) * 30 days);
     }
 
     /**
@@ -200,16 +209,16 @@ contract FroggyFriends is
      * Reward is number of frogs owned multiplied by the duration rate and boosts
      * @param _proofs merkle proofs array for boost ownership
      */
-    function _calculateRewardPerFroggy(bytes32[][] memory _proofs) private view returns (uint256) {
-        uint256 hibernationTadpole_ = hibernationStatusRate[hibernationStatus[msg.sender]];
+    function calculateReward(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
+        uint256 hibernationTadpole_ = hibernationStatusRate[hibernationStatus[_holder]] * balanceOf(_holder);
         uint256 totalBoost_;
         for (uint256 index = 0; index < _proofs.length; index++) {
-            if (_proofs[index].length > 0 && _verifyProof(_proofs[index], roots[Boost(index)], msg.sender)) {
+            if (_proofs[index].length > 0 && _verifyProof(_proofs[index], roots[Boost(index)], _holder)) {
                 totalBoost_ += boostRate[Boost(index)];
             }
         }
 
-        return hibernationTadpole_ + ((hibernationTadpole_ * totalBoost_) / 100); // hibernationTadpole_ + totalBoostedTadpoles_
+        return hibernationTadpole_ + ((hibernationTadpole_ * totalBoost_) / 100);
     }
 
     function _verifyProof(bytes32[] memory _proof, bytes32 _root, address _holder) private pure returns (bool) {
