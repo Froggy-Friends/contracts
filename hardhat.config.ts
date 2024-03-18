@@ -44,11 +44,11 @@ const config: HardhatUserConfig = {
     apiKey: ETHERSCAN_API_KEY,
     customChains: [
       {
-        network: "holesky",
-        chainId: 17000,
+        network: "sepolia",
+        chainId: 11155111,
         urls: {
-          apiURL: "https://api-holesky.etherscan.io/api",
-          browserURL: "https://holesky.etherscan.io/"
+          apiURL: "https://api-sepolia.etherscan.io/api",
+          browserURL: "https://sepolia.etherscan.io/"
         }
       }
     ]
