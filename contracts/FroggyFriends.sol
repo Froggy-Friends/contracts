@@ -34,7 +34,6 @@ contract FroggyFriends is
 
     // Hibernation
     ITadpole public constant tadpole = ITadpole(0xeCd48F326e70388D993694De59B4542cE8aF7649);
-    address public constant tadpoleSender = 0x6b01aD68aB6F53128B7A6Fe7E199B31179A4629a;
 
     mapping(address => HibernationStatus) public hibernationStatus; // owner  => HibernationStatus
     mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
