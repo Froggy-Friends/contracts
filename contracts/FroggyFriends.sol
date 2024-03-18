@@ -177,7 +177,7 @@ contract FroggyFriends is
     /**
      * Wakes frogs from hibernation and distributes tadpole rewards to holder
      */
-    function wake(bytes32[][] memory _proofs) external returns (uint256) {
+    function wake(bytes32[][] memory _proofs) external {
         if (hibernationStatus[msg.sender] == HibernationStatus.AWAKE) revert InvalidHibernationStatus();
         if (getUnlockTimestamp(msg.sender) > block.timestamp) revert HibernationIncomplete();
         if (_proofs.length > 3) revert InvalidSize();
@@ -186,7 +186,6 @@ contract FroggyFriends is
         tadpole.transfer(msg.sender, totalTadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
-        return totalTadpoleAmount_;
     }
 
     /**
