@@ -24,6 +24,13 @@ async function main() {
 
     await froggyFriends.deployTransaction.wait(5);
     console.log("\nContract deployed with 5 confirmations");
+
+    console.log('\Verifying contract code on Etherscan...');
+    await run("verify:verify",
+    {
+        address: froggyFriends.address,
+        constructorArguments: []
+    });
 }
 
 main()
