@@ -181,21 +181,12 @@ contract FroggyFriends is
         if (hibernationStatus[msg.sender] == HibernationStatus.AWAKE) revert InvalidHibernationStatus();
         if (getUnlockTimestamp(msg.sender) > block.timestamp) revert HibernationIncomplete();
         if (_proofs.length > 3) revert InvalidSize();
-        uint256 totalTadpoleAmount_ = tadpoleRewards(_proofs, msg.sender);
+        uint256 totalTadpoleAmount_ = calculateReward(_proofs, msg.sender);
         if (totalTadpoleAmount_ > tadpole.balanceOf(address(this))) revert OutOfTadpoles();
         tadpole.transfer(msg.sender, totalTadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
         return totalTadpoleAmount_;
-    }
-
-    /**
-     * Returns tadpole rewards upon waking frogs
-     * @param _proofs merkle proofs of boosts
-     * @param account address of holder
-     */
-    function tadpoleRewards(bytes32[][] memory _proofs, address account) public view returns (uint256) {
-        return _calculateRewardPerFroggy(_proofs) * balanceOf(account);
     }
 
     /**
@@ -219,11 +210,11 @@ contract FroggyFriends is
      * Reward is number of frogs owned multiplied by the duration rate and boosts
      * @param _proofs merkle proofs array for boost ownership
      */
-    function _calculateRewardPerFroggy(bytes32[][] memory _proofs) private view returns (uint256) {
-        uint256 hibernationTadpole_ = hibernationStatusRate[hibernationStatus[msg.sender]];
+    function calculateReward(bytes32[][] memory _proofs, address _holder) public view returns (uint256) {
+        uint256 hibernationTadpole_ = hibernationStatusRate[hibernationStatus[_holder]] * balanceOf(_holder);
         uint256 totalBoost_;
         for (uint256 index = 0; index < _proofs.length; index++) {
-            if (_proofs[index].length > 0 && _verifyProof(_proofs[index], roots[Boost(index)], msg.sender)) {
+            if (_proofs[index].length > 0 && _verifyProof(_proofs[index], roots[Boost(index)], _holder)) {
                 totalBoost_ += boostRate[Boost(index)];
             }
         }
