@@ -177,24 +177,28 @@ contract FroggyFriends is
      * Wakes frogs from hibernation and distributes tadpole rewards to holder
      */
     function wake(bytes32[][] memory _proofs) external {
-        if (hibernationDate[msg.sender] == 0) revert InvalidHibernationStatus();
+        if (hibernationStatus[msg.sender] == HibernationStatus.AWAKE) revert InvalidHibernationStatus();
         if (getUnlockTimestamp(msg.sender) > block.timestamp) revert HibernationIncomplete();
         if (_proofs.length > 3) revert InvalidSize();
-        uint256 totalTadpoleAmount_ = tadpoleRewards(_proofs);
-        if (totalTadpoleAmount_ > tadpoleBalanceOf(address(this))) revert OutOfTadpoles();
+        uint256 totalTadpoleAmount_ = tadpoleRewards(_proofs, msg.sender);
+        if (totalTadpoleAmount_ > tadpole.balanceOf(address(this))) revert OutOfTadpoles();
         tadpole.transfer(msg.sender, totalTadpoleAmount_);
         hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
         emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
     }
 
-    function tadpoleRewards(bytes32[][] memory _proofs) public view returns (uint256) {
-        return _calculateRewardPerFroggy(_proofs) * balanceOf(msg.sender);
+    /**
+     * Returns tadpole rewards upon waking frogs
+     * @param _proofs merkle proofs of boosts
+     * @param account address of holder
+     */
+    function tadpoleRewards(bytes32[][] memory _proofs, address account) public view returns (uint256) {
+        return _calculateRewardPerFroggy(_proofs) * balanceOf(account);
     }
 
-    function tadpoleBalanceOf(address account) public view returns (uint256) {
-        return tadpole.balanceOf(account);
-    }
-
+    /**
+     * Owner function to withdraw tadpole tokens
+     */
     function withdraw(address account) public onlyOwner {
         tadpole.transfer(account, tadpole.balanceOf(address(this)));
     }
