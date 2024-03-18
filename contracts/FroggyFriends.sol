@@ -36,7 +36,8 @@ contract FroggyFriends is
     ITadpole public constant tadpole = ITadpole(0xeCd48F326e70388D993694De59B4542cE8aF7649);
 
     mapping(address => HibernationStatus) public hibernationStatus; // owner  => HibernationStatus
-    mapping(address => uint256) public hibernationDate; // owner => block.timestamp(now)
+    mapping(address => uint256) public hibernationOneDate; // owner => block.timestamp(now) for season one
+    mapping(address => uint256) public hibernationTwoDate; // owner => block.timestamp(now) for season two
     mapping(HibernationStatus => uint256) public hibernationStatusRate; // HibernationStatus => tadpole amount per frog
     mapping(Boost => uint256) public boostRate; // Boost => rate
     mapping(HibernationStatus => bool) public hibernationAvailable; // HibernationStatus => isAvailable
@@ -167,9 +168,9 @@ contract FroggyFriends is
      * @param _hibernationStatus 1 = 30 days, 2 = 60 days, 3 = 90 days
      */
     function hibernate(HibernationStatus _hibernationStatus) external checkHibernationIsAvailable(_hibernationStatus) {
-        if (balanceOf(msg.sender) == 0 || hibernationDate[msg.sender] > 0) revert InvalidSize();
+        if (balanceOf(msg.sender) == 0 || hibernationOneDate[msg.sender] > 0) revert InvalidSize();
         hibernationStatus[msg.sender] = _hibernationStatus;
-        hibernationDate[msg.sender] = block.timestamp;
+        hibernationOneDate[msg.sender] = block.timestamp;
         emit Hibernate(msg.sender, block.timestamp, _hibernationStatus);
     }
 
@@ -209,7 +210,7 @@ contract FroggyFriends is
      * @return unlockTimestamp hibernation completion date in seconds
      */
     function getUnlockTimestamp(address _holder) public view returns (uint256) {
-        return hibernationDate[_holder] + (uint256(hibernationStatus[_holder]) * 30 days);
+        return hibernationOneDate[_holder] + (uint256(hibernationStatus[_holder]) * 30 days);
     }
 
     /**
