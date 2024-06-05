@@ -18,6 +18,7 @@ contract FroggyFriends is
     ONFT721Upgradeable
 {
     string public froggyUrl;
+    uint256 _totalMinted;
 
     function initialize(
         uint256 _minGasToTransfer,
@@ -41,6 +42,15 @@ contract FroggyFriends is
 
     function setFroggyUrl(string memory _froggyUrl) external onlyOwner {
         froggyUrl = _froggyUrl;
+    }
+
+    function _mint(address to, uint256 tokenId) internal override {
+        super._mint(to, tokenId);
+        _totalMinted++;
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return _totalMinted;
     }
 
     function setRoyalties(
