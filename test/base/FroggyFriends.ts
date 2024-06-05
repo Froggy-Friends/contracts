@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import Web3 from "web3";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, ContractFactory } from "ethers";
@@ -8,8 +8,6 @@ const web3 = new Web3();
 describe("ONFT721: ", function () {
   const chainId_A = 1;
   const chainId_B = 2;
-  const name = "OmnichainNonFungibleToken";
-  const symbol = "ONFT";
   const minGasToStore = 150000;
   const batchSizeLimit = 300;
   const defaultAdapterParams = ethers.utils.solidityPack(
@@ -30,7 +28,7 @@ describe("ONFT721: ", function () {
     owner = (await ethers.getSigners())[0];
     warlock = (await ethers.getSigners())[1];
     LZEndpointMock = await ethers.getContractFactory("LZEndpointMock");
-    ONFT = await ethers.getContractFactory("ONFT721Mock");
+    ONFT = await ethers.getContractFactory("FroggyFriendsBase");
   });
 
   beforeEach(async function () {
@@ -38,18 +36,14 @@ describe("ONFT721: ", function () {
     lzEndpointMockB = await LZEndpointMock.deploy(chainId_B);
 
     // generate a proxy to allow it to go ONFT
-    ONFT_A = await ONFT.deploy(
-      name,
-      symbol,
+    ONFT_A = await upgrades.deployProxy(ONFT, [
       minGasToStore,
-      lzEndpointMockA.address
-    );
-    ONFT_B = await ONFT.deploy(
-      name,
-      symbol,
+      lzEndpointMockA.address,
+    ]);
+    ONFT_B = await upgrades.deployProxy(ONFT, [
       minGasToStore,
-      lzEndpointMockB.address
-    );
+      lzEndpointMockB.address,
+    ]);
 
     // wire the lz endpoints to guide msgs back and forth
     lzEndpointMockA.setDestLzEndpoint(ONFT_B.address, lzEndpointMockB.address);
@@ -370,7 +364,7 @@ describe("ONFT721: ", function () {
     ).to.be.revertedWith("ONFT721: send caller is not owner nor approved");
   });
 
-  it("sendFrom() - reverts if sender does not own token", async function () {
+  it("sendFrom() - reverts if sender has not approved proxy contract", async function () {
     const tokenIdA = 123;
     const tokenIdB = 456;
     // mint to both owners
@@ -488,7 +482,7 @@ describe("ONFT721: ", function () {
 
     // should revert because payload is no longer valid
     await expect(ONFT_B.clearCredits(payload)).to.be.revertedWith(
-      "no credits stored"
+      "ONFT721: no credits stored"
     );
   });
 
@@ -584,7 +578,7 @@ describe("ONFT721: ", function () {
 
     // should revert because payload is no longer valid
     await expect(ONFT_B.clearCredits(payload)).to.be.revertedWith(
-      "no credits stored"
+      "ONFT721: no credits stored"
     );
   });
 });

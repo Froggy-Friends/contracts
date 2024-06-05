@@ -10,7 +10,7 @@ import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Stri
 import {ONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/ONFT721Upgradeable.sol";
 import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/IONFT721Upgradeable.sol";
 
-contract FroggyFriends is
+contract FroggyFriendsBase is
     DefaultOperatorFiltererUpgradeable,
     ERC2981Upgradeable,
     ONFT721Upgradeable
@@ -32,6 +32,17 @@ contract FroggyFriends is
         __DefaultOperatorFilterer_init();
         __ERC2981_init();
         froggyUrl = "https://metadata.froggyfriendsnft.com/base/frog/";
+    }
+
+    function mint(address _tokenOwner, uint _newId) external payable {
+        _safeMint(_tokenOwner, _newId);
+    }
+
+    function rawOwnerOf(uint tokenId) public view returns (address) {
+        if (_exists(tokenId)) {
+            return ownerOf(tokenId);
+        }
+        return address(0);
     }
 
     function _baseURI() internal view override returns (string memory) {
