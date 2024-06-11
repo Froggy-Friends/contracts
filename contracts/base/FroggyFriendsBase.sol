@@ -16,7 +16,7 @@ contract FroggyFriendsBase is
     ONFT721Upgradeable
 {
     string public froggyUrl;
-    uint256 _totalMinted;
+    uint256 private _totalMinted;
 
     function initialize(
         uint256 _minGasToTransfer,
