@@ -23,7 +23,7 @@ contract FroggyFriendsBase is
         address _lzEndpoint
     ) public initializer {
         __ONFT721Upgradeable_init(
-            "Froggy Friends",
+            "FroggyFriendsBase",
             "FROGGY",
             _minGasToTransfer,
             _lzEndpoint
@@ -32,10 +32,6 @@ contract FroggyFriendsBase is
         __DefaultOperatorFilterer_init();
         __ERC2981_init();
         froggyUrl = "https://metadata.froggyfriendsnft.com/base/frog/";
-    }
-
-    function mint(address _tokenOwner, uint _newId) external payable {
-        _safeMint(_tokenOwner, _newId);
     }
 
     function rawOwnerOf(uint tokenId) public view returns (address) {

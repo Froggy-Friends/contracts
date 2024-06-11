@@ -9,7 +9,8 @@
     "airdrop": "npx hardhat run scripts/airdrop.ts --network mainnet",
     "deploy": "npx hardhat run scripts/deploy.ts --network mainnet",
     "upgrade": "npx hardhat run scripts/upgrade.ts --network mainnet",
-    "test": "npx hardhat test --network hardhat --typecheck"
+    "test": "npx hardhat test --network hardhat --typecheck",
+    "types": "npx hardhat typechain"
   },
   "repository": {
     "type": "git",
@@ -36,7 +37,7 @@
   },
   "dependencies": {
     "@layerzerolabs/solidity-examples": "^0.0.13",
-    "@openzeppelin/contracts-upgradeable": "^4.9.2",
+    "@openzeppelin/contracts-upgradeable": "^4.9.6",
     "hardhat-contract-sizer": "^2.10.0",
     "operator-filter-registry": "^1.4.2",
     "web3": "^4.9.0"

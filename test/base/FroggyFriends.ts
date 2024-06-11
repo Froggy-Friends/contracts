@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import Web3 from "web3";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, ContractFactory } from "ethers";
-const web3 = new Web3();
+import { keccak256 } from "ethers/lib/utils";
+import { FroggyFriends, FroggyFriendsBase } from "../../types";
 
 describe("ONFT721: ", function () {
   const chainId_A = 1;
@@ -20,15 +20,19 @@ describe("ONFT721: ", function () {
     lzEndpointMockA: Contract,
     lzEndpointMockB: Contract,
     LZEndpointMock: ContractFactory,
-    ONFT: ContractFactory,
-    ONFT_A: Contract,
-    ONFT_B: Contract;
+    FroggyFriendsEthFactory: ContractFactory,
+    FroggyFriendsBaseFactory: ContractFactory,
+    FroggyFriendsEth: FroggyFriends,
+    FroggyFriendsBase: FroggyFriendsBase;
 
   before(async function () {
     owner = (await ethers.getSigners())[0];
     warlock = (await ethers.getSigners())[1];
     LZEndpointMock = await ethers.getContractFactory("LZEndpointMock");
-    ONFT = await ethers.getContractFactory("FroggyFriendsBase");
+    FroggyFriendsEthFactory = await ethers.getContractFactory("FroggyFriends");
+    FroggyFriendsBaseFactory = await ethers.getContractFactory(
+      "FroggyFriendsBase"
+    );
   });
 
   beforeEach(async function () {
@@ -36,66 +40,84 @@ describe("ONFT721: ", function () {
     lzEndpointMockB = await LZEndpointMock.deploy(chainId_B);
 
     // generate a proxy to allow it to go ONFT
-    ONFT_A = await upgrades.deployProxy(ONFT, [
+    FroggyFriendsEth = (await upgrades.deployProxy(FroggyFriendsEthFactory, [
       minGasToStore,
       lzEndpointMockA.address,
-    ]);
-    ONFT_B = await upgrades.deployProxy(ONFT, [
+    ])) as FroggyFriends;
+    FroggyFriendsBase = (await upgrades.deployProxy(FroggyFriendsBaseFactory, [
       minGasToStore,
       lzEndpointMockB.address,
-    ]);
+    ])) as FroggyFriendsBase;
 
     // wire the lz endpoints to guide msgs back and forth
-    lzEndpointMockA.setDestLzEndpoint(ONFT_B.address, lzEndpointMockB.address);
-    lzEndpointMockB.setDestLzEndpoint(ONFT_A.address, lzEndpointMockA.address);
+    lzEndpointMockA.setDestLzEndpoint(
+      FroggyFriendsBase.address,
+      lzEndpointMockB.address
+    );
+    lzEndpointMockB.setDestLzEndpoint(
+      FroggyFriendsEth.address,
+      lzEndpointMockA.address
+    );
 
     // set each contracts source address so it can send to each other
-    await ONFT_A.setTrustedRemote(
+    await FroggyFriendsEth.setTrustedRemote(
       chainId_B,
       ethers.utils.solidityPack(
         ["address", "address"],
-        [ONFT_B.address, ONFT_A.address]
+        [FroggyFriendsBase.address, FroggyFriendsEth.address]
       )
     );
-    await ONFT_B.setTrustedRemote(
+    await FroggyFriendsBase.setTrustedRemote(
       chainId_A,
       ethers.utils.solidityPack(
         ["address", "address"],
-        [ONFT_A.address, ONFT_B.address]
+        [FroggyFriendsEth.address, FroggyFriendsBase.address]
       )
     );
 
     // set batch size limit
-    await ONFT_A.setDstChainIdToBatchLimit(chainId_B, batchSizeLimit);
-    await ONFT_B.setDstChainIdToBatchLimit(chainId_A, batchSizeLimit);
+    await FroggyFriendsEth.setDstChainIdToBatchLimit(chainId_B, batchSizeLimit);
+    await FroggyFriendsBase.setDstChainIdToBatchLimit(
+      chainId_A,
+      batchSizeLimit
+    );
 
     // set min dst gas for swap
-    await ONFT_A.setMinDstGas(chainId_B, 1, 150000);
-    await ONFT_B.setMinDstGas(chainId_A, 1, 150000);
+    await FroggyFriendsEth.setMinDstGas(chainId_B, 1, 150000);
+    await FroggyFriendsBase.setMinDstGas(chainId_A, 1, 150000);
   });
 
   it("sendFrom() - your own tokens", async function () {
     const tokenId = 123;
-    await ONFT_A.mint(owner.address, tokenId);
+    await FroggyFriendsEth.mint(owner.address, tokenId);
 
     // verify the owner of the token is on the source chain
-    expect(await ONFT_A.ownerOf(tokenId)).to.be.equal(owner.address);
+    expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(owner.address);
 
     // token doesn't exist on other chain
-    await expect(ONFT_B.ownerOf(tokenId)).to.be.revertedWith(
+    await expect(FroggyFriendsBase.ownerOf(tokenId)).to.be.revertedWith(
       "ERC721: invalid token ID"
     );
 
     // can transfer token on srcChain as regular erC721
-    await ONFT_A.transferFrom(owner.address, warlock.address, tokenId);
-    expect(await ONFT_A.ownerOf(tokenId)).to.be.equal(warlock.address);
+    await FroggyFriendsEth.transferFrom(
+      owner.address,
+      warlock.address,
+      tokenId
+    );
+    expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(
+      warlock.address
+    );
 
     // approve the proxy to swap your token
-    await ONFT_A.connect(warlock).approve(ONFT_A.address, tokenId);
+    await FroggyFriendsEth.connect(warlock).approve(
+      FroggyFriendsEth.address,
+      tokenId
+    );
 
     // estimate nativeFees
     let nativeFee = (
-      await ONFT_A.estimateSendFee(
+      await FroggyFriendsEth.estimateSendFee(
         chainId_B,
         warlock.address,
         tokenId,
@@ -105,7 +127,7 @@ describe("ONFT721: ", function () {
     ).nativeFee;
 
     // swaps token to other chain
-    await ONFT_A.connect(warlock).sendFrom(
+    await FroggyFriendsEth.connect(warlock).sendFrom(
       warlock.address,
       chainId_B,
       warlock.address,
@@ -117,14 +139,18 @@ describe("ONFT721: ", function () {
     );
 
     // token is burnt
-    expect(await ONFT_A.ownerOf(tokenId)).to.be.equal(ONFT_A.address);
+    expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(
+      FroggyFriendsEth.address
+    );
 
     // token received on the dst chain
-    expect(await ONFT_B.ownerOf(tokenId)).to.be.equal(warlock.address);
+    expect(await FroggyFriendsBase.ownerOf(tokenId)).to.be.equal(
+      warlock.address
+    );
 
     // estimate nativeFees
     nativeFee = (
-      await ONFT_B.estimateSendFee(
+      await FroggyFriendsBase.estimateSendFee(
         chainId_A,
         warlock.address,
         tokenId,
@@ -134,7 +160,7 @@ describe("ONFT721: ", function () {
     ).nativeFee;
 
     // can send to other onft contract eg. not the original nft contract chain
-    await ONFT_B.connect(warlock).sendFrom(
+    await FroggyFriendsBase.connect(warlock).sendFrom(
       warlock.address,
       chainId_A,
       warlock.address,
@@ -146,19 +172,52 @@ describe("ONFT721: ", function () {
     );
 
     // token is burned on the sending chain
-    expect(await ONFT_B.ownerOf(tokenId)).to.be.equal(ONFT_B.address);
+    expect(await FroggyFriendsBase.ownerOf(tokenId)).to.be.equal(
+      FroggyFriendsBase.address
+    );
   });
 
-  it("sendFrom() - reverts if not owner on non proxy chain", async function () {
+  it("sendFrom() - totalSupply is incremented", async function () {
     const tokenId = 123;
-    await ONFT_A.mint(owner.address, tokenId);
+    const tokenId2 = 456;
+    const tokenId3 = 789;
+    await FroggyFriendsEth.mint(owner.address, tokenId);
+    await FroggyFriendsEth.mint(owner.address, tokenId2);
+    await FroggyFriendsEth.mint(owner.address, tokenId3);
+
+    // verify the owner of the token is on the source chain
+    expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(owner.address);
+    expect(await FroggyFriendsEth.ownerOf(tokenId2)).to.be.equal(owner.address);
+    expect(await FroggyFriendsEth.ownerOf(tokenId3)).to.be.equal(owner.address);
+
+    // token doesn't exist on other chain
+    await expect(FroggyFriendsBase.ownerOf(tokenId)).to.be.revertedWith(
+      "ERC721: invalid token ID"
+    );
+    await expect(FroggyFriendsBase.ownerOf(tokenId2)).to.be.revertedWith(
+      "ERC721: invalid token ID"
+    );
+    await expect(FroggyFriendsBase.ownerOf(tokenId3)).to.be.revertedWith(
+      "ERC721: invalid token ID"
+    );
 
     // approve the proxy to swap your token
-    await ONFT_A.approve(ONFT_A.address, tokenId);
+    await FroggyFriendsEth.connect(owner).approve(
+      FroggyFriendsEth.address,
+      tokenId
+    );
+    await FroggyFriendsEth.connect(owner).approve(
+      FroggyFriendsEth.address,
+      tokenId2
+    );
+    await FroggyFriendsEth.connect(owner).approve(
+      FroggyFriendsEth.address,
+      tokenId3
+    );
 
     // estimate nativeFees
     let nativeFee = (
-      await ONFT_A.estimateSendFee(
+      await FroggyFriendsEth.estimateSendFee(
         chainId_B,
         owner.address,
         tokenId,
@@ -168,7 +227,81 @@ describe("ONFT721: ", function () {
     ).nativeFee;
 
     // swaps token to other chain
-    await ONFT_A.sendFrom(
+    await FroggyFriendsEth.connect(owner).sendFrom(
+      owner.address,
+      chainId_B,
+      owner.address,
+      tokenId,
+      owner.address,
+      ethers.constants.AddressZero,
+      defaultAdapterParams,
+      { value: nativeFee }
+    );
+    await FroggyFriendsEth.connect(owner).sendFrom(
+      owner.address,
+      chainId_B,
+      owner.address,
+      tokenId2,
+      owner.address,
+      ethers.constants.AddressZero,
+      defaultAdapterParams,
+      { value: nativeFee }
+    );
+    await FroggyFriendsEth.connect(owner).sendFrom(
+      owner.address,
+      chainId_B,
+      owner.address,
+      tokenId3,
+      owner.address,
+      ethers.constants.AddressZero,
+      defaultAdapterParams,
+      { value: nativeFee }
+    );
+
+    // token is burnt
+    expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(
+      FroggyFriendsEth.address
+    );
+    expect(await FroggyFriendsEth.ownerOf(tokenId2)).to.be.equal(
+      FroggyFriendsEth.address
+    );
+    expect(await FroggyFriendsEth.ownerOf(tokenId3)).to.be.equal(
+      FroggyFriendsEth.address
+    );
+
+    // token received on the dst chain
+    expect(await FroggyFriendsBase.ownerOf(tokenId)).to.be.equal(owner.address);
+    expect(await FroggyFriendsBase.ownerOf(tokenId2)).to.be.equal(
+      owner.address
+    );
+    expect(await FroggyFriendsBase.ownerOf(tokenId3)).to.be.equal(
+      owner.address
+    );
+
+    // total supply increases on dst chain
+    expect(await FroggyFriendsBase.totalSupply()).to.be.equal(3);
+  });
+
+  it("sendFrom() - reverts if not owner on non proxy chain", async function () {
+    const tokenId = 123;
+    await FroggyFriendsEth.mint(owner.address, tokenId);
+
+    // approve the proxy to swap your token
+    await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
+
+    // estimate nativeFees
+    let nativeFee = (
+      await FroggyFriendsEth.estimateSendFee(
+        chainId_B,
+        owner.address,
+        tokenId,
+        false,
+        defaultAdapterParams
+      )
+    ).nativeFee;
+
+    // swaps token to other chain
+    await FroggyFriendsEth.sendFrom(
       owner.address,
       chainId_B,
       owner.address,
@@ -182,11 +315,11 @@ describe("ONFT721: ", function () {
     );
 
     // token received on the dst chain
-    expect(await ONFT_B.ownerOf(tokenId)).to.be.equal(owner.address);
+    expect(await FroggyFriendsBase.ownerOf(tokenId)).to.be.equal(owner.address);
 
     // reverts because other address does not own it
     await expect(
-      ONFT_B.connect(warlock).sendFrom(
+      FroggyFriendsBase.connect(warlock).sendFrom(
         warlock.address,
         chainId_A,
         warlock.address,
@@ -200,14 +333,14 @@ describe("ONFT721: ", function () {
 
   it("sendFrom() - on behalf of other user", async function () {
     const tokenId = 123;
-    await ONFT_A.mint(owner.address, tokenId);
+    await FroggyFriendsEth.mint(owner.address, tokenId);
 
     // approve the proxy to swap your token
-    await ONFT_A.approve(ONFT_A.address, tokenId);
+    await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
 
     // estimate nativeFees
     let nativeFee = (
-      await ONFT_A.estimateSendFee(
+      await FroggyFriendsEth.estimateSendFee(
         chainId_B,
         owner.address,
         tokenId,
@@ -217,7 +350,7 @@ describe("ONFT721: ", function () {
     ).nativeFee;
 
     // swaps token to other chain
-    await ONFT_A.sendFrom(
+    await FroggyFriendsEth.sendFrom(
       owner.address,
       chainId_B,
       owner.address,
@@ -231,14 +364,14 @@ describe("ONFT721: ", function () {
     );
 
     // token received on the dst chain
-    expect(await ONFT_B.ownerOf(tokenId)).to.be.equal(owner.address);
+    expect(await FroggyFriendsBase.ownerOf(tokenId)).to.be.equal(owner.address);
 
     // approve the other user to send the token
-    await ONFT_B.approve(warlock.address, tokenId);
+    await FroggyFriendsBase.approve(warlock.address, tokenId);
 
     // estimate nativeFees
     nativeFee = (
-      await ONFT_B.estimateSendFee(
+      await FroggyFriendsBase.estimateSendFee(
         chainId_A,
         warlock.address,
         tokenId,
@@ -248,7 +381,7 @@ describe("ONFT721: ", function () {
     ).nativeFee;
 
     // sends across
-    await ONFT_B.connect(warlock).sendFrom(
+    await FroggyFriendsBase.connect(warlock).sendFrom(
       owner.address,
       chainId_A,
       warlock.address,
@@ -260,19 +393,21 @@ describe("ONFT721: ", function () {
     );
 
     // token received on the dst chain
-    expect(await ONFT_A.ownerOf(tokenId)).to.be.equal(warlock.address);
+    expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(
+      warlock.address
+    );
   });
 
   it("sendFrom() - reverts if contract is approved, but not the sending user", async function () {
     const tokenId = 123;
-    await ONFT_A.mint(owner.address, tokenId);
+    await FroggyFriendsEth.mint(owner.address, tokenId);
 
     // approve the proxy to swap your token
-    await ONFT_A.approve(ONFT_A.address, tokenId);
+    await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
 
     // estimate nativeFees
     let nativeFee = (
-      await ONFT_A.estimateSendFee(
+      await FroggyFriendsEth.estimateSendFee(
         chainId_B,
         owner.address,
         tokenId,
@@ -282,7 +417,7 @@ describe("ONFT721: ", function () {
     ).nativeFee;
 
     // swaps token to other chain
-    await ONFT_A.sendFrom(
+    await FroggyFriendsEth.sendFrom(
       owner.address,
       chainId_B,
       owner.address,
@@ -296,14 +431,14 @@ describe("ONFT721: ", function () {
     );
 
     // token received on the dst chain
-    expect(await ONFT_B.ownerOf(tokenId)).to.be.equal(owner.address);
+    expect(await FroggyFriendsBase.ownerOf(tokenId)).to.be.equal(owner.address);
 
     // approve the contract to swap your token
-    await ONFT_B.approve(ONFT_B.address, tokenId);
+    await FroggyFriendsBase.approve(FroggyFriendsBase.address, tokenId);
 
     // reverts because contract is approved, not the user
     await expect(
-      ONFT_B.connect(warlock).sendFrom(
+      FroggyFriendsBase.connect(warlock).sendFrom(
         owner.address,
         chainId_A,
         warlock.address,
@@ -317,14 +452,14 @@ describe("ONFT721: ", function () {
 
   it("sendFrom() - reverts if not approved on non proxy chain", async function () {
     const tokenId = 123;
-    await ONFT_A.mint(owner.address, tokenId);
+    await FroggyFriendsEth.mint(owner.address, tokenId);
 
     // approve the proxy to swap your token
-    await ONFT_A.approve(ONFT_A.address, tokenId);
+    await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
 
     // estimate nativeFees
     let nativeFee = (
-      await ONFT_A.estimateSendFee(
+      await FroggyFriendsEth.estimateSendFee(
         chainId_B,
         owner.address,
         tokenId,
@@ -334,7 +469,7 @@ describe("ONFT721: ", function () {
     ).nativeFee;
 
     // swaps token to other chain
-    await ONFT_A.sendFrom(
+    await FroggyFriendsEth.sendFrom(
       owner.address,
       chainId_B,
       owner.address,
@@ -348,11 +483,11 @@ describe("ONFT721: ", function () {
     );
 
     // token received on the dst chain
-    expect(await ONFT_B.ownerOf(tokenId)).to.be.equal(owner.address);
+    expect(await FroggyFriendsBase.ownerOf(tokenId)).to.be.equal(owner.address);
 
     // reverts because user is not approved
     await expect(
-      ONFT_B.connect(warlock).sendFrom(
+      FroggyFriendsBase.connect(warlock).sendFrom(
         owner.address,
         chainId_A,
         warlock.address,
@@ -368,14 +503,14 @@ describe("ONFT721: ", function () {
     const tokenIdA = 123;
     const tokenIdB = 456;
     // mint to both owners
-    await ONFT_A.mint(owner.address, tokenIdA);
-    await ONFT_A.mint(warlock.address, tokenIdB);
+    await FroggyFriendsEth.mint(owner.address, tokenIdA);
+    await FroggyFriendsEth.mint(warlock.address, tokenIdB);
 
     // approve owner.address to transfer, but not the other
-    await ONFT_A.setApprovalForAll(ONFT_A.address, true);
+    await FroggyFriendsEth.setApprovalForAll(FroggyFriendsEth.address, true);
 
     await expect(
-      ONFT_A.connect(warlock).sendFrom(
+      FroggyFriendsEth.connect(warlock).sendFrom(
         warlock.address,
         chainId_B,
         warlock.address,
@@ -386,7 +521,7 @@ describe("ONFT721: ", function () {
       )
     ).to.be.revertedWith("ONFT721: send caller is not owner nor approved");
     await expect(
-      ONFT_A.connect(warlock).sendFrom(
+      FroggyFriendsEth.connect(warlock).sendFrom(
         warlock.address,
         chainId_B,
         owner.address,
@@ -399,25 +534,28 @@ describe("ONFT721: ", function () {
   });
 
   it("sendBatchFrom()", async function () {
-    await ONFT_A.setMinGasToTransferAndStore(400000);
-    await ONFT_B.setMinGasToTransferAndStore(400000);
+    await FroggyFriendsEth.setMinGasToTransferAndStore(400000);
+    await FroggyFriendsBase.setMinGasToTransferAndStore(400000);
 
     const tokenIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     // mint to owner
     for (let tokenId of tokenIds) {
-      await ONFT_A.mint(warlock.address, tokenId);
+      await FroggyFriendsEth.mint(warlock.address, tokenId);
     }
 
     // approve owner.address to transfer
-    await ONFT_A.connect(warlock).setApprovalForAll(ONFT_A.address, true);
+    await FroggyFriendsEth.connect(warlock).setApprovalForAll(
+      FroggyFriendsEth.address,
+      true
+    );
 
     // expected event params
     const payload = ethers.utils.defaultAbiCoder.encode(
       ["bytes", "uint[]"],
       [warlock.address, tokenIds]
     );
-    const hashedPayload = web3.utils.keccak256(payload);
+    const hashedPayload = keccak256(payload);
 
     let adapterParams = ethers.utils.solidityPack(
       ["uint16", "uint256"],
@@ -426,7 +564,7 @@ describe("ONFT721: ", function () {
 
     // estimate nativeFees
     let nativeFee = (
-      await ONFT_A.estimateSendBatchFee(
+      await FroggyFriendsEth.estimateSendBatchFee(
         chainId_B,
         warlock.address,
         tokenIds,
@@ -437,7 +575,7 @@ describe("ONFT721: ", function () {
 
     // initiate batch transfer
     await expect(
-      ONFT_A.connect(warlock).sendBatchFrom(
+      FroggyFriendsEth.connect(warlock).sendBatchFrom(
         warlock.address,
         chainId_B,
         warlock.address,
@@ -448,13 +586,13 @@ describe("ONFT721: ", function () {
         { value: nativeFee }
       )
     )
-      .to.emit(ONFT_B, "CreditStored")
+      .to.emit(FroggyFriendsBase, "CreditStored")
       .withArgs(hashedPayload, payload);
 
     // only partial amount of tokens has been sent, the rest have been stored as a credit
     let creditedIdsA = [];
     for (let tokenId of tokenIds) {
-      let owner = await ONFT_B.rawOwnerOf(tokenId);
+      let owner = await FroggyFriendsBase.rawOwnerOf(tokenId);
       if (owner == ethers.constants.AddressZero) {
         creditedIdsA.push(tokenId);
       } else {
@@ -463,13 +601,13 @@ describe("ONFT721: ", function () {
     }
 
     // clear the rest of the credits
-    await expect(ONFT_B.clearCredits(payload))
-      .to.emit(ONFT_B, "CreditCleared")
+    await expect(FroggyFriendsBase.clearCredits(payload))
+      .to.emit(FroggyFriendsBase, "CreditCleared")
       .withArgs(hashedPayload);
 
     let creditedIdsB = [];
     for (let tokenId of creditedIdsA) {
-      let owner = await ONFT_B.rawOwnerOf(tokenId);
+      let owner = await FroggyFriendsBase.rawOwnerOf(tokenId);
       if (owner == ethers.constants.AddressZero) {
         creditedIdsB.push(tokenId);
       } else {
@@ -481,14 +619,14 @@ describe("ONFT721: ", function () {
     expect(creditedIdsB.length).to.be.equal(0);
 
     // should revert because payload is no longer valid
-    await expect(ONFT_B.clearCredits(payload)).to.be.revertedWith(
+    await expect(FroggyFriendsBase.clearCredits(payload)).to.be.revertedWith(
       "ONFT721: no credits stored"
     );
   });
 
   it("sendBatchFrom() - large batch", async function () {
-    await ONFT_A.setMinGasToTransferAndStore(400000);
-    await ONFT_B.setMinGasToTransferAndStore(400000);
+    await FroggyFriendsEth.setMinGasToTransferAndStore(400000);
+    await FroggyFriendsBase.setMinGasToTransferAndStore(400000);
 
     const tokenIds = [];
 
@@ -498,18 +636,21 @@ describe("ONFT721: ", function () {
 
     // mint to owner
     for (let tokenId of tokenIds) {
-      await ONFT_A.mint(warlock.address, tokenId);
+      await FroggyFriendsEth.mint(warlock.address, tokenId);
     }
 
     // approve owner.address to transfer
-    await ONFT_A.connect(warlock).setApprovalForAll(ONFT_A.address, true);
+    await FroggyFriendsEth.connect(warlock).setApprovalForAll(
+      FroggyFriendsEth.address,
+      true
+    );
 
     // expected event params
     const payload = ethers.utils.defaultAbiCoder.encode(
       ["bytes", "uint[]"],
       [warlock.address, tokenIds]
     );
-    const hashedPayload = web3.utils.keccak256(payload);
+    const hashedPayload = keccak256(payload);
 
     let adapterParams = ethers.utils.solidityPack(
       ["uint16", "uint256"],
@@ -518,7 +659,7 @@ describe("ONFT721: ", function () {
 
     // estimate nativeFees
     let nativeFee = (
-      await ONFT_A.estimateSendBatchFee(
+      await FroggyFriendsEth.estimateSendBatchFee(
         chainId_B,
         warlock.address,
         tokenIds,
@@ -529,7 +670,7 @@ describe("ONFT721: ", function () {
 
     // initiate batch transfer
     await expect(
-      ONFT_A.connect(warlock).sendBatchFrom(
+      FroggyFriendsEth.connect(warlock).sendBatchFrom(
         warlock.address,
         chainId_B,
         warlock.address,
@@ -540,13 +681,13 @@ describe("ONFT721: ", function () {
         { value: nativeFee }
       )
     )
-      .to.emit(ONFT_B, "CreditStored")
+      .to.emit(FroggyFriendsBase, "CreditStored")
       .withArgs(hashedPayload, payload);
 
     // only partial amount of tokens has been sent, the rest have been stored as a credit
     let creditedIdsA = [];
     for (let tokenId of tokenIds) {
-      let owner = await ONFT_B.rawOwnerOf(tokenId);
+      let owner = await FroggyFriendsBase.rawOwnerOf(tokenId);
       if (owner == ethers.constants.AddressZero) {
         creditedIdsA.push(tokenId);
       } else {
@@ -554,16 +695,12 @@ describe("ONFT721: ", function () {
       }
     }
 
-    // console.log("Number of tokens credited: ", creditedIdsA.length)
-
     // clear the rest of the credits
-    let tx = await (await ONFT_B.clearCredits(payload)).wait();
-
-    // console.log("Total gasUsed: ", tx.gasUsed.toString())
+    await (await FroggyFriendsBase.clearCredits(payload)).wait();
 
     let creditedIdsB = [];
     for (let tokenId of creditedIdsA) {
-      let owner = await ONFT_B.rawOwnerOf(tokenId);
+      let owner = await FroggyFriendsBase.rawOwnerOf(tokenId);
       if (owner == ethers.constants.AddressZero) {
         creditedIdsB.push(tokenId);
       } else {
@@ -577,7 +714,7 @@ describe("ONFT721: ", function () {
     expect(creditedIdsB.length).to.be.equal(0);
 
     // should revert because payload is no longer valid
-    await expect(ONFT_B.clearCredits(payload)).to.be.revertedWith(
+    await expect(FroggyFriendsBase.clearCredits(payload)).to.be.revertedWith(
       "ONFT721: no credits stored"
     );
   });
