@@ -7,7 +7,14 @@ import "hardhat-contract-sizer";
 import dotenv from "dotenv";
 dotenv.config();
 
-const { ALCHEMY_API_KEY, ALCHEMY_API_KEY_SEPOLIA, PRIVATE_KEY, ETHERSCAN_API_KEY, COINMARKETCAP_API_KEY } = process.env;
+const {
+  ALCHEMY_API_KEY,
+  ALCHEMY_API_KEY_SEPOLIA,
+  ALCHEMY_API_KEY_BASE,
+  PRIVATE_KEY,
+  ETHERSCAN_API_KEY,
+  COINMARKETCAP_API_KEY,
+} = process.env;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -22,7 +29,7 @@ const config: HardhatUserConfig = {
   defaultNetwork: "sepolia",
   networks: {
     hardhat: {
-      chainId: 1337
+      chainId: 1337,
     },
     mainnet: {
       url: ALCHEMY_API_KEY,
@@ -30,32 +37,36 @@ const config: HardhatUserConfig = {
     },
     sepolia: {
       url: ALCHEMY_API_KEY_SEPOLIA,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: [`0x${PRIVATE_KEY}`],
+    },
+    base: {
+      url: ALCHEMY_API_KEY_BASE,
+      accounts: [`0x${PRIVATE_KEY}`],
     },
     coverage: {
-      url: "http://127.0.0.1:8555"
-    }
+      url: "http://127.0.0.1:8555",
+    },
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY
+    apiKey: ETHERSCAN_API_KEY,
   },
   gasReporter: {
-    currency: 'USD',
-    enabled: true,
+    currency: "USD",
+    enabled: false,
     coinmarketcap: COINMARKETCAP_API_KEY,
-    gasPrice: 15
+    gasPrice: 15,
   },
   typechain: {
     outDir: "types",
-    target: "ethers-v5"
+    target: "ethers-v5",
   },
   contractSizer: {
     alphaSort: true,
     disambiguatePaths: false,
-    runOnCompile: true,
+    runOnCompile: false,
     strict: true,
     only: [],
-  }
+  },
 };
 
 export default config;
