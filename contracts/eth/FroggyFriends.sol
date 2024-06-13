@@ -84,12 +84,6 @@ contract FroggyFriends is
         maxSupply = 4444;
     }
 
-    function mint(address account, uint256 tokenId) external payable {
-        require(_totalMinted < 4444, "Minted out");
-        _mint(account, tokenId);
-        _totalMinted++;
-    }
-
     function totalSupply() public view returns (uint256) {
         return _totalMinted;
     }
