@@ -92,7 +92,7 @@ describe("ONFT721: ", function () {
 
   it("sendFrom() - your own tokens", async function () {
     const tokenId = 123;
-    await FroggyFriendsEth.mint(owner.address, tokenId);
+    await FroggyFriendsEth.connect(owner).mint(tokenId);
 
     // verify the owner of the token is on the source chain
     expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(owner.address);
@@ -184,9 +184,9 @@ describe("ONFT721: ", function () {
     const tokenId = 123;
     const tokenId2 = 456;
     const tokenId3 = 789;
-    await FroggyFriendsEth.mint(owner.address, tokenId);
-    await FroggyFriendsEth.mint(owner.address, tokenId2);
-    await FroggyFriendsEth.mint(owner.address, tokenId3);
+    await FroggyFriendsEth.connect(owner).mint(tokenId);
+    await FroggyFriendsEth.connect(owner).mint(tokenId2);
+    await FroggyFriendsEth.connect(owner).mint(tokenId3);
 
     // verify the owner of the token is on the source chain
     expect(await FroggyFriendsEth.ownerOf(tokenId)).to.be.equal(owner.address);
@@ -287,7 +287,7 @@ describe("ONFT721: ", function () {
 
   it("sendFrom() - reverts if not owner on non proxy chain", async function () {
     const tokenId = 123;
-    await FroggyFriendsEth.mint(owner.address, tokenId);
+    await FroggyFriendsEth.connect(owner).mint(tokenId);
 
     // approve the proxy to swap your token
     await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
@@ -336,7 +336,7 @@ describe("ONFT721: ", function () {
 
   it("sendFrom() - on behalf of other user", async function () {
     const tokenId = 123;
-    await FroggyFriendsEth.mint(owner.address, tokenId);
+    await FroggyFriendsEth.connect(owner).mint(tokenId);
 
     // approve the proxy to swap your token
     await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
@@ -403,7 +403,7 @@ describe("ONFT721: ", function () {
 
   it("sendFrom() - reverts if contract is approved, but not the sending user", async function () {
     const tokenId = 123;
-    await FroggyFriendsEth.mint(owner.address, tokenId);
+    await FroggyFriendsEth.connect(owner).mint(tokenId);
 
     // approve the proxy to swap your token
     await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
@@ -455,7 +455,7 @@ describe("ONFT721: ", function () {
 
   it("sendFrom() - reverts if not approved on non proxy chain", async function () {
     const tokenId = 123;
-    await FroggyFriendsEth.mint(owner.address, tokenId);
+    await FroggyFriendsEth.connect(owner).mint(tokenId);
 
     // approve the proxy to swap your token
     await FroggyFriendsEth.approve(FroggyFriendsEth.address, tokenId);
@@ -506,8 +506,8 @@ describe("ONFT721: ", function () {
     const tokenIdA = 123;
     const tokenIdB = 456;
     // mint to both owners
-    await FroggyFriendsEth.mint(owner.address, tokenIdA);
-    await FroggyFriendsEth.mint(warlock.address, tokenIdB);
+    await FroggyFriendsEth.connect(owner).mint(tokenIdA);
+    await FroggyFriendsEth.connect(warlock).mint(tokenIdB);
 
     // approve owner.address to transfer, but not the other
     await FroggyFriendsEth.setApprovalForAll(FroggyFriendsEth.address, true);
@@ -544,7 +544,7 @@ describe("ONFT721: ", function () {
 
     // mint to owner
     for (let tokenId of tokenIds) {
-      await FroggyFriendsEth.mint(warlock.address, tokenId);
+      await FroggyFriendsEth.connect(warlock).mint(tokenId);
     }
 
     // approve owner.address to transfer
@@ -639,7 +639,7 @@ describe("ONFT721: ", function () {
 
     // mint to owner
     for (let tokenId of tokenIds) {
-      await FroggyFriendsEth.mint(warlock.address, tokenId);
+      await FroggyFriendsEth.connect(warlock).mint(tokenId);
     }
 
     // approve owner.address to transfer
