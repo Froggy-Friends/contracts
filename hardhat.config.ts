@@ -10,6 +10,7 @@ dotenv.config();
 const {
   ALCHEMY_API_KEY,
   ALCHEMY_API_KEY_SEPOLIA,
+  ALCHEMY_API_KEY_BASE,
   PRIVATE_KEY,
   ETHERSCAN_API_KEY,
   COINMARKETCAP_API_KEY,
@@ -36,6 +37,10 @@ const config: HardhatUserConfig = {
     },
     sepolia: {
       url: ALCHEMY_API_KEY_SEPOLIA,
+      accounts: [`0x${PRIVATE_KEY}`],
+    },
+    base: {
+      url: ALCHEMY_API_KEY_BASE,
       accounts: [`0x${PRIVATE_KEY}`],
     },
     coverage: {
