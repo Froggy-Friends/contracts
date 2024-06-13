@@ -3,7 +3,8 @@ import { ethers, upgrades } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, ContractFactory } from "ethers";
 import { keccak256 } from "ethers/lib/utils";
-import { FroggyFriends, FroggyFriendsBase } from "../../types";
+import { FroggyFriends as FroggyFriendsEth } from "../../types/contracts/eth";
+import { FroggyFriends as FroggyFriendsBase } from "../../types/contracts/base";
 
 describe("ONFT721: ", function () {
   const chainId_A = 1;
@@ -22,16 +23,18 @@ describe("ONFT721: ", function () {
     LZEndpointMock: ContractFactory,
     FroggyFriendsEthFactory: ContractFactory,
     FroggyFriendsBaseFactory: ContractFactory,
-    FroggyFriendsEth: FroggyFriends,
+    FroggyFriendsEth: FroggyFriendsEth,
     FroggyFriendsBase: FroggyFriendsBase;
 
   before(async function () {
     owner = (await ethers.getSigners())[0];
     warlock = (await ethers.getSigners())[1];
     LZEndpointMock = await ethers.getContractFactory("LZEndpointMock");
-    FroggyFriendsEthFactory = await ethers.getContractFactory("FroggyFriends");
+    FroggyFriendsEthFactory = await ethers.getContractFactory(
+      "contracts/eth/FroggyFriends.sol:FroggyFriends"
+    );
     FroggyFriendsBaseFactory = await ethers.getContractFactory(
-      "FroggyFriendsBase"
+      "contracts/base/FroggyFriends.sol:FroggyFriends"
     );
   });
 
@@ -43,7 +46,7 @@ describe("ONFT721: ", function () {
     FroggyFriendsEth = (await upgrades.deployProxy(FroggyFriendsEthFactory, [
       minGasToStore,
       lzEndpointMockA.address,
-    ])) as FroggyFriends;
+    ])) as FroggyFriendsEth;
     FroggyFriendsBase = (await upgrades.deployProxy(FroggyFriendsBaseFactory, [
       minGasToStore,
       lzEndpointMockB.address,

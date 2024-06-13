@@ -10,7 +10,7 @@ import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Stri
 import {ONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/ONFT721Upgradeable.sol";
 import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/IONFT721Upgradeable.sol";
 
-contract FroggyFriendsBase is
+contract FroggyFriends is
     DefaultOperatorFiltererUpgradeable,
     ERC2981Upgradeable,
     ONFT721Upgradeable
@@ -23,7 +23,7 @@ contract FroggyFriendsBase is
         address _lzEndpoint
     ) public initializer {
         __ONFT721Upgradeable_init(
-            "FroggyFriendsBase",
+            "Froggy Friends",
             "FROGGY",
             _minGasToTransfer,
             _lzEndpoint
