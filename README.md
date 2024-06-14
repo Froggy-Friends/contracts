@@ -4,6 +4,10 @@ The Froggy Friends upgradeable contracts are [Layer Zero](https://layerzero.netw
 Contracts are built with [Hardhat](https://hardhat.org/) tooling using the upgradeable proxy pattern.  
 By importing the hardhat `upgrades` package in `scripts/deploy.ts` and using `upgrades.deployProxy` we are using the [transparent proxy](https://docs.openzeppelin.com/upgrades-plugins/1.x/proxies#transparent-proxies-and-function-clashes) pattern for upgradeable proxies.
 
+## Important Notes
+
+Tasks in the [tasks] folder depend on the folder names in [contracts]. Changing the contract folder names will break the tasks and they will need to be updated.
+
 ## Building
 
 > npm run compile
