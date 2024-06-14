@@ -8,7 +8,7 @@
     "compile": "npx hardhat compile",
     "size": "npx hardhat size-contracts",
     "airdrop": "npx hardhat run scripts/airdrop.ts --network mainnet",
-    "deploy": "npx hardhat run scripts/deploy.ts --network base",
+    "deploy": "npx hardhat deploy --network mainnet --contract FroggyFriends",
     "upgrade": "npx hardhat run scripts/upgrade.ts --network mainnet",
     "test": "npx hardhat test --network hardhat --typecheck",
     "types": "npx hardhat typechain",
