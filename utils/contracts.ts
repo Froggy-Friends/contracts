@@ -16,7 +16,7 @@ export const getContract = async (
   contract: string,
   ethLib: typeof ethers & HardhatEthersHelpers
 ) => {
-  const address = contractAddresses.get(network) || froggyFriendsEth;
+  const address = getContractAddress(network);
   const factory = await getContractFactory(network, contract, ethLib);
   console.log("contract address: ", address);
   console.log("contract factory: ", factory);
@@ -36,6 +36,10 @@ export const getContractFactory = async (
 export const getContractName = (network: string, contract: string) => {
   // i.e. "contracts/eth/FroggyFriends.sol:FroggyFriends"
   return `contracts/${network}/${contract}.sol:${contract}`;
+};
+
+export const getContractAddress = (network: string): string => {
+  return contractAddresses.get(network) || froggyFriendsEth;
 };
 
 export const getChainId = (network: string): number => {

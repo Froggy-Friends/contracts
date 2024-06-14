@@ -8,7 +8,7 @@ export const minGasToTransfer = 100000;
 
 // sourced from https://docs.layerzero.network/v1/developers/evm/technical-reference/mainnet/mainnet-addresses
 export const chainIds = new Map([
-  ["ethereum", 101],
+  ["mainnet", 101],
   ["polygon", 109],
   ["arbitrum", 110],
   ["optimism", 111],
@@ -16,7 +16,7 @@ export const chainIds = new Map([
 ]);
 
 export const minGasLimits = new Map([
-  ["ethereum", evmGasLimit],
+  ["mainnet", evmGasLimit],
   ["polygon", evmGasLimit],
   ["arbitrum", arbGasLimit],
   ["optimism", evmGasLimit],

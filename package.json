@@ -9,9 +9,9 @@
     "size": "npx hardhat size-contracts",
     "airdrop": "npx hardhat run scripts/airdrop.ts --network mainnet",
     "deploy": "npx hardhat deploy --network mainnet --contract FroggyFriends",
-    "upgrade": "npx hardhat run scripts/upgrade.ts --network mainnet",
     "test": "npx hardhat test --network hardhat --typecheck",
     "types": "npx hardhat typechain",
+    "upgrade": "npx hardhat upgrade --network mainnet --contract FroggyFriends",
     "verify": "npx hardhat verify --network base 0x9DA02cBE93835E8b6c44563415C72D106B1ce00a"
   },
   "repository": {
