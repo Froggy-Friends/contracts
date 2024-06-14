@@ -6,9 +6,8 @@
   "scripts": {
     "bridge": "npx hardhat bridge --network mainnet --dst base --contract FroggyFriends",
     "compile": "npx hardhat compile",
+    "publish": "npx hardhat publish --network mainnet --contract FroggyFriends",
     "size": "npx hardhat size-contracts",
-    "airdrop": "npx hardhat run scripts/airdrop.ts --network mainnet",
-    "deploy": "npx hardhat deploy --network mainnet --contract FroggyFriends",
     "test": "npx hardhat test --network hardhat --typecheck",
     "types": "npx hardhat typechain",
     "upgrade": "npx hardhat upgrade --network mainnet --contract FroggyFriends",

@@ -13,8 +13,12 @@ export async function bridge(taskArgs: TaskArguments, hre: HRE) {
   const dstContract = await getContract(dst, contract, ethers);
   const dstChainId = getChainId(dst);
   const minGasLimit = getMinGasLimit(dst);
+  console.log("srcContract: ", srcContract.address);
+  console.log("dstContract: ", dstContract.address);
+  console.log("dstChainId: ", dstChainId);
+  console.log("minGasLimit: ", minGasLimit);
 
-  // Step 1: Make contracts trust each other
+  // Step 1: Set destination chain as trusted remote
   const srcAndDst = ethers.utils.solidityPack(
     ["address", "address"],
     [srcContract.address, dstContract.address]
@@ -30,7 +34,7 @@ export async function bridge(taskArgs: TaskArguments, hre: HRE) {
   // Step 2: Set batch size limit for transfers
   await srcContract.setDstChainIdToBatchLimit(dstChainId, batchSizeLimit);
 
-  // Step 3: Set the minimum gas to transfer NFT on each chain
+  // Step 3: Set the minimum gas to transfer NFTs
   await srcContract.setMinDstGas(dstChainId, 1, minGasLimit);
 
   console.log(`Wired ${contract} contract from ${network.name} to ${dst}!`);

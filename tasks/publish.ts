@@ -3,7 +3,7 @@ import { getContractFactory, getLzEndpoint } from "../utils/contracts";
 import { minGasToTransfer } from "../utils/constants";
 
 // Call once per chain to wire them together i.e. once on mainnet, once on base, etc.
-export async function deploy(taskArgs: TaskArguments, hre: HRE) {
+export async function publish(taskArgs: TaskArguments, hre: HRE) {
   const { contract } = taskArgs;
   const { ethers, network, upgrades } = hre;
 

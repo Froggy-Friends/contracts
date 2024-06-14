@@ -19,7 +19,6 @@ export const getContract = async (
   const address = getContractAddress(network);
   const factory = await getContractFactory(network, contract, ethLib);
   console.log("contract address: ", address);
-  console.log("contract factory: ", factory);
   return factory.attach(address);
 };
 

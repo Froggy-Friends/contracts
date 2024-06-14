@@ -1,11 +1,11 @@
 import { task } from "hardhat/config";
 import { bridge } from "./bridge";
-import { deploy } from "./deploy";
+import { publish } from "./publish";
 
 // npx hardhat deploy --network mainnet --contract FroggyFriends
-task("deploy", "Deploys a contract to a chain")
+task("publish", "Publishes a proxy contract to a chain")
   .addParam("contract", "The contract name")
-  .setAction(deploy);
+  .setAction(publish);
 
 // npx hardhat bridge --network mainnet --dst base --contract FroggyFriends
 task("bridge", "Wires two chains together for bridging using Layer Zero")
