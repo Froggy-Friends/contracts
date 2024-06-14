@@ -56,7 +56,7 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
+    apiKey: ETHERSCAN_API_KEY, // update when verifying other chains i.e. BASESCAN_API_KEY for Base
     customChains: [
       {
         network: "base",
