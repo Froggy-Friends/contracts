@@ -1,35 +1,28 @@
-import { ethers, run, upgrades } from "hardhat";
-
-const lzMainnet = "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675";
-const lzSepolia = "0x7cacBe439EaD55fa1c22790330b12835c6884a91";
-const lzHolesky = "0x4e08B1F1AC79898569CfB999FB92B5495FB18A2B";
-const lzBase = "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7";
+import { ethers, network, upgrades } from "hardhat";
+import { lzBaseEndpoint, minGasToTransfer } from "../utils/constants";
+import { getContractFactory } from "../utils/contracts";
 
 async function main() {
   console.log("Starting deployment...");
-  const FroggyFriends = await ethers.getContractFactory("base/FroggyFriends");
+  const factory = await getContractFactory(
+    network.name,
+    "FroggyFriends",
+    ethers
+  );
   const [owner] = await ethers.getSigners();
   console.log("\nDeployment Owner: ", owner.address);
 
-  const _minGasToTransfer = 100000;
-  const _lzEndpoint = lzMainnet;
-  const froggyFriends = await upgrades.deployProxy(FroggyFriends, [
-    _minGasToTransfer,
-    _lzEndpoint,
+  const contract = await upgrades.deployProxy(factory, [
+    minGasToTransfer,
+    lzBaseEndpoint,
   ]);
-  console.log("\nContract Address: ", froggyFriends.address);
+  console.log("\nContract Address: ", contract.address);
 
-  await froggyFriends.deployed();
+  await contract.deployed();
   console.log("\nContract deployed...");
 
-  await froggyFriends.deployTransaction.wait(5);
+  await contract.deployTransaction.wait(5);
   console.log("\nContract deployed with 5 confirmations");
-
-  console.log("Verifying contract code on Etherscan...");
-  await run("verify:verify", {
-    address: froggyFriends.address,
-    constructorArguments: [],
-  });
 }
 
 main()
