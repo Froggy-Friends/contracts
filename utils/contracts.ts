@@ -8,6 +8,8 @@ import {
   ethChainId,
   lzEthereumEndpoint,
   lzEndpoints,
+  evmProvidedGasLimit,
+  providedGasLimits,
 } from "./constants";
 import { HardhatEthersHelpers } from "hardhat/types";
 
@@ -48,6 +50,10 @@ export const getChainId = (network: string): number => {
 
 export const getMinGasLimit = (network: string): number => {
   return minGasLimits.get(network) || evmGasLimit;
+};
+
+export const getProvidedGasLimit = (network: string): number => {
+  return providedGasLimits.get(network) || evmProvidedGasLimit;
 };
 
 export const getLzEndpoint = (network: string): string => {

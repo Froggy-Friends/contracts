@@ -6,6 +6,7 @@
   "scripts": {
     "bridge": "npx hardhat bridge --network mainnet --dst base --contract FroggyFriends",
     "compile": "npx hardhat compile",
+    "portal": "npx hardhat portal --network mainnet --dst base --contract FroggyFriends --token 295",
     "publish": "npx hardhat publish --network mainnet --contract FroggyFriends",
     "size": "npx hardhat size-contracts",
     "test": "npx hardhat test --network hardhat --typecheck",
