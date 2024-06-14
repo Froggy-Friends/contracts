@@ -24,18 +24,18 @@ export async function bridge(taskArgs: TaskArguments, hre: HRE) {
     [dstContract.address, srcContract.address]
   );
   console.log("dstAndSrc: ", dstAndSrc);
-  // if (!(await srcContract.isTrustedRemote(dstChainId, dstAndSrc))) {
-  console.log("Setting trusted remote for dst ", dst, "to src", network.name);
-  await srcContract.setTrustedRemote(getChainId(dst), dstAndSrc);
-  // } else {
-  // console.log("Already trusted remote for dst", dst, "to src", network.name);
-  // }
+  if (!(await srcContract.isTrustedRemote(dstChainId, dstAndSrc))) {
+    console.log("Setting trusted remote for dst ", dst, "to src", network.name);
+    await srcContract.setTrustedRemote(getChainId(dst), dstAndSrc);
+  } else {
+    console.log("Already trusted remote for dst", dst, "to src", network.name);
+  }
 
   // Step 2: Set batch size limit for transfers
-  // await srcContract.setDstChainIdToBatchLimit(dstChainId, batchSizeLimit);
+  await srcContract.setDstChainIdToBatchLimit(dstChainId, batchSizeLimit);
 
   // Step 3: Set the minimum gas to transfer NFTs
-  // await srcContract.setMinDstGas(dstChainId, 1, minGasLimit);
+  await srcContract.setMinDstGas(dstChainId, 1, minGasLimit);
 
   console.log(`Wired ${contract} contract from ${network.name} to ${dst}!`);
 }
