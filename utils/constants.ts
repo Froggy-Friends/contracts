@@ -1,6 +1,7 @@
 export const froggyFriendsEth = "0x7ad05c1b87e93BE306A9Eadf80eA60d7648F1B6F";
 export const lzEthereumEndpoint = "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675";
 export const lzBaseEndpoint = "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7";
+export const lzBlastEndpoint = "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7";
 export const ethChainId = 101;
 export const batchSizeLimit = 10;
 export const evmGasLimit = 260000;
@@ -17,6 +18,7 @@ export const chainIds = new Map([
   ["arbitrum", 110],
   ["optimism", 111],
   ["base", 184],
+  ["blast", 243],
 ]);
 
 export const minGasLimits = new Map([
@@ -25,6 +27,7 @@ export const minGasLimits = new Map([
   ["arbitrum", arbGasLimit],
   ["optimism", evmGasLimit],
   ["base", evmGasLimit],
+  ["blast", evmGasLimit],
 ]);
 
 export const providedGasLimits = new Map([
@@ -33,6 +36,7 @@ export const providedGasLimits = new Map([
   ["arbitrum", arbGasLimit + 1000],
   ["optimism", evmGasLimit + 1000],
   ["base", evmGasLimit + 1000],
+  ["blast", evmGasLimit + 1000],
 ]);
 
 export const contractAddresses = new Map([
@@ -43,6 +47,7 @@ export const contractAddresses = new Map([
 export const lzEndpoints = new Map([
   ["mainnet", lzEthereumEndpoint],
   ["base", lzBaseEndpoint],
+  ["blast", lzBlastEndpoint],
   ["sepolia", "0x7cacBe439EaD55fa1c22790330b12835c6884a91"],
   ["holesky", "0x4e08B1F1AC79898569CfB999FB92B5495FB18A2B"],
 ]);

@@ -12,9 +12,11 @@ const {
   ALCHEMY_API_KEY,
   ALCHEMY_API_KEY_SEPOLIA,
   ALCHEMY_API_KEY_BASE,
+  INFURA_API_KEY_BLAST,
   PRIVATE_KEY,
   ETHERSCAN_API_KEY,
   BASESCAN_API_KEY,
+  BLASTSCAN_API_KEY,
   COINMARKETCAP_API_KEY,
 } = process.env;
 
@@ -51,6 +53,16 @@ const config: HardhatUserConfig = {
         },
       },
     },
+    blast: {
+      url: INFURA_API_KEY_BLAST,
+      accounts: [`0x${PRIVATE_KEY}`],
+      verify: {
+        etherscan: {
+          apiKey: BLASTSCAN_API_KEY,
+          apiUrl: "https://api.blastscan.io/api",
+        },
+      },
+    },
     coverage: {
       url: "http://127.0.0.1:8555",
     },
@@ -64,6 +76,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "blast",
+        chainId: 81457,
+        urls: {
+          apiURL: "https://api.blastscan.io/api",
+          browserURL: "https://blastscan.io",
         },
       },
     ],
