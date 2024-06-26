@@ -11,15 +11,26 @@ export async function publish(taskArgs: TaskArguments, hre: HRE) {
 
   const factory = await getContractFactory(network.name, contract, ethers);
   const [owner] = await ethers.getSigners();
+  const lzEndpoint = getLzEndpoint(network.name);
   console.log("Deployer: ", owner.address);
+  console.log("minGasToTransfer: ", minGasToTransfer);
+  console.log("lzEndpoint: ", lzEndpoint);
 
-  const instance = await upgrades.deployProxy(factory, [
-    minGasToTransfer,
-    getLzEndpoint(network.name),
-  ]);
-  console.log("Contract address: ", instance.address);
+  try {
+    const instance = await upgrades.deployProxy(factory, [
+      minGasToTransfer,
+      lzEndpoint,
+    ]);
 
-  await instance.deployed();
+    console.log("Contract address: ", instance.address);
 
-  console.log(`Deployed ${contract} contract to ${network.name}!`);
+    await instance.waitForDeployment();
+
+    console.log(`Deployed ${contract} contract to ${network.name}!`);
+  } catch (error: any) {
+    console.error("Deployment failed:", error);
+    if (error.reason) {
+      console.error("Revert reason:", error.reason);
+    }
+  }
 }
