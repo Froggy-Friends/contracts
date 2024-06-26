@@ -35,7 +35,7 @@ export const getContractFactory = async (
 };
 
 export const getContractName = (network: string, contract: string) => {
-  // i.e. "contracts/eth/FroggyFriends.sol:FroggyFriends"
+  // i.e. "contracts/mainnet/FroggyFriends.sol:FroggyFriends"
   return `contracts/${network}/${contract}.sol:${contract}`;
 };
 
