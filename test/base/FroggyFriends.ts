@@ -31,7 +31,7 @@ describe("ONFT721: ", function () {
     warlock = (await ethers.getSigners())[1];
     LZEndpointMock = await ethers.getContractFactory("LZEndpointMock");
     FroggyFriendsEthFactory = await ethers.getContractFactory(
-      "contracts/eth/FroggyFriends.sol:FroggyFriends"
+      "contracts/mainnet/FroggyFriends.sol:FroggyFriends"
     );
     FroggyFriendsBaseFactory = await ethers.getContractFactory(
       "contracts/base/FroggyFriends.sol:FroggyFriends"
