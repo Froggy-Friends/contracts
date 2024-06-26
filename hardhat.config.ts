@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-ethers";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-deploy";
 import "hardhat-contract-sizer";
@@ -54,6 +55,7 @@ const config: HardhatUserConfig = {
       },
     },
     blast: {
+      chainId: 81457,
       url: INFURA_API_KEY_BLAST,
       accounts: [`0x${PRIVATE_KEY}`],
       verify: {
