@@ -7,12 +7,12 @@
     "bridge": "npx hardhat bridge --network mainnet --dst base --contract FroggyFriends",
     "compile": "npx hardhat compile",
     "portal": "npx hardhat portal --network mainnet --dst base --contract FroggyFriends --token 295",
-    "publish": "npx hardhat publish --network mainnet --contract FroggyFriends",
+    "publish": "npx hardhat publish --network blast --contract FroggyFriends",
     "size": "npx hardhat size-contracts",
     "test": "npx hardhat test --network hardhat --typecheck",
     "types": "npx hardhat typechain",
     "upgrade": "npx hardhat upgrade --network mainnet --contract FroggyFriends",
-    "verify": "npx hardhat verify --network base 0x9DA02cBE93835E8b6c44563415C72D106B1ce00a"
+    "verify": "npx hardhat verify --network blast 0x0"
   },
   "repository": {
     "type": "git",
@@ -25,21 +25,21 @@
   },
   "homepage": "https://github.com/Froggy-Friends/froggy-friends-upgradeable#readme",
   "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomicfoundation/hardhat-verify": "^2.0.4",
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@openzeppelin/hardhat-upgrades": "^1.28.0",
+    "@openzeppelin/hardhat-upgrades": "^3.1.1",
     "@types/chai": "^4.3.5",
     "dotenv": "^10.0.0",
-    "ethers": "^5.7.2",
+    "ethers": "^6.13.1",
     "hardhat": "^2.22.5",
     "hardhat-deploy": "^0.12.1"
   },
   "dependencies": {
-    "@layerzerolabs/solidity-examples": "^0.0.13",
-    "@openzeppelin/contracts-upgradeable": "^4.9.6",
+    "@layerzerolabs/solidity-examples": "^1.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.6",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "hardhat-contract-sizer": "^2.10.0",
     "operator-filter-registry": "^1.4.2",
     "web3": "^4.9.0"
