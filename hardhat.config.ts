@@ -1,25 +1,17 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import "@nomicfoundation/hardhat-chai-matchers";
-import "@nomicfoundation/hardhat-ethers";
 import "@openzeppelin/hardhat-upgrades";
-import "hardhat-deploy";
 import "hardhat-contract-sizer";
-import dotenv from "dotenv";
+import { vars } from 'hardhat/config';
 import "./tasks";
-dotenv.config();
 
-const {
-  ALCHEMY_API_KEY,
-  ALCHEMY_API_KEY_SEPOLIA,
-  ALCHEMY_API_KEY_BASE,
-  INFURA_API_KEY_BLAST,
-  PRIVATE_KEY,
-  ETHERSCAN_API_KEY,
-  BASESCAN_API_KEY,
-  BLASTSCAN_API_KEY,
-  COINMARKETCAP_API_KEY,
-} = process.env;
+const PRIVATE_KEY = vars.get('PRIVATE_KEY');
+const ALCHEMY_API_KEY_ETH = vars.get('ALCHEMY_API_KEY_ETH');
+const ALCHEMY_API_KEY_SEPOLIA = vars.get('ALCHEMY_API_KEY_SEPOLIA');
+const ALCHEMY_API_KEY_BASE = vars.get('ALCHEMY_API_KEY_BASE');
+const ALCHEMY_API_KEY_BLAST = vars.get('ALCHEMY_API_KEY_BLAST');
+const ETHERSCAN_API_KEY = vars.get('ETHERSCAN_API_KEY');
+const COINMARKETCAP_API_KEY = vars.get('COINMARKETCAP_API_KEY');
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -37,7 +29,7 @@ const config: HardhatUserConfig = {
       chainId: 1337,
     },
     mainnet: {
-      url: ALCHEMY_API_KEY,
+      url: ALCHEMY_API_KEY_ETH,
       accounts: [`0x${PRIVATE_KEY}`],
     },
     sepolia: {
@@ -47,30 +39,31 @@ const config: HardhatUserConfig = {
     base: {
       url: ALCHEMY_API_KEY_BASE,
       accounts: [`0x${PRIVATE_KEY}`],
-      verify: {
-        etherscan: {
-          apiUrl: "https://api.basescan.org/api",
-          apiKey: BASESCAN_API_KEY,
-        },
-      },
+      // verify: {
+      //   etherscan: {
+      //     apiUrl: "https://api.basescan.org/api",
+      //     apiKey: vars.get('BASESCAN_API_KEY'),
+      //   },
+      // },
     },
     blast: {
       chainId: 81457,
-      url: INFURA_API_KEY_BLAST,
+      url: ALCHEMY_API_KEY_BLAST,
       accounts: [`0x${PRIVATE_KEY}`],
-      verify: {
-        etherscan: {
-          apiKey: BLASTSCAN_API_KEY,
-          apiUrl: "https://api.blastscan.io/api",
-        },
-      },
+      // verify: {
+      //   etherscan: {
+      //     apiKey: vars.get('BLASTSCAN_API_KEY'),
+      //     apiUrl: "https://api.blastscan.io/api",
+      //   },
+      // },
     },
     coverage: {
       url: "http://127.0.0.1:8555",
     },
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY, // update when verifying other chains i.e. BASESCAN_API_KEY for Base
+    // update when verifying other chains i.e. BASESCAN_API_KEY for Base
+    apiKey: ETHERSCAN_API_KEY, 
     customChains: [
       {
         network: "base",
