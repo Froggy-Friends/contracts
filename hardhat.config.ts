@@ -3,7 +3,6 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-contract-sizer";
 import { vars } from 'hardhat/config';
-import "./tasks";
 
 const PRIVATE_KEY = vars.get('PRIVATE_KEY');
 const ALCHEMY_API_KEY_ETH = vars.get('ALCHEMY_API_KEY_ETH');
