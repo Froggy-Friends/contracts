@@ -9,8 +9,8 @@ import {DefaultOperatorFiltererUpgradeable} from "operator-filter-registry/src/u
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-// import {ONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/ONFT721Upgradeable.sol";
-// import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/IONFT721Upgradeable.sol";
+import {ONFT721} from "@layerzerolabs/solidity-examples/contracts/token/onft721/ONFT721.sol";
+import {IONFT721} from "@layerzerolabs/solidity-examples/contracts/token/onft721/interfaces/IONFT721.sol";
 import {ITadpole} from "./Interfaces.sol";
 
 error InvalidSize();
@@ -102,13 +102,7 @@ contract FroggyFriends is
         uint256 tokenId
     ) public view virtual override returns (string memory) {
         if (!_exists(tokenId)) revert InvalidToken();
-        return
-            string(
-                abi.encodePacked(
-                    froggyUrl,
-                    Strings.toString(tokenId)
-                )
-            );
+        return string(abi.encodePacked(froggyUrl, Strings.toString(tokenId)));
     }
 
     function setRoyalties(
