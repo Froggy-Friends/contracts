@@ -30,9 +30,10 @@
     "hardhat": "^2.22.5"
   },
   "dependencies": {
-    "@layerzerolabs/solidity-examples": "^1.1.0",
+    "@layerzerolabs/solidity-examples": "^0.0.13",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@openzeppelin/contracts-upgradeable": "^5.0.2",
+    "@openzeppelin/contracts": "^4.9.6",
+    "@openzeppelin/contracts-upgradeable": "^4.9.6",
     "hardhat-contract-sizer": "^2.10.0",
     "operator-filter-registry": "^1.4.2"
   }
