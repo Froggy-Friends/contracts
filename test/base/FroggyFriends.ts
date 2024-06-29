@@ -1,8 +1,7 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract, ContractFactory } from "ethers";
-import { keccak256 } from "ethers/lib/utils";
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/src/signers";
+import { Contract, ContractFactory, keccak256, solidityPacked } from "ethers";
 import { FroggyFriends as FroggyFriendsEth } from "../../types/contracts/eth";
 import { FroggyFriends as FroggyFriendsBase } from "../../types/contracts/base";
 
@@ -11,13 +10,13 @@ describe("ONFT721: ", function () {
   const chainId_B = 2;
   const minGasToStore = 150000;
   const batchSizeLimit = 300;
-  const defaultAdapterParams = ethers.utils.solidityPack(
+  const defaultAdapterParams = solidityPacked(
     ["uint16", "uint256"],
     [1, 200000]
   );
 
-  let owner: SignerWithAddress,
-    warlock: SignerWithAddress,
+  let owner: HardhatEthersSigner,
+    warlock: HardhatEthersSigner,
     lzEndpointMockA: Contract,
     lzEndpointMockB: Contract,
     LZEndpointMock: ContractFactory,
@@ -27,8 +26,9 @@ describe("ONFT721: ", function () {
     FroggyFriendsBase: FroggyFriendsBase;
 
   before(async function () {
-    owner = (await ethers.getSigners())[0];
-    warlock = (await ethers.getSigners())[1];
+    const [_owner, _warlock] = await ethers.getSigners();
+    owner = _owner;
+    warlock = _warlock;
     LZEndpointMock = await ethers.getContractFactory("LZEndpointMock");
     FroggyFriendsEthFactory = await ethers.getContractFactory(
       "contracts/mainnet/FroggyFriends.sol:FroggyFriends"
