@@ -2,17 +2,17 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-contract-sizer";
-import { vars } from 'hardhat/config';
+import { vars } from "hardhat/config";
 
-const PRIVATE_KEY = vars.get('PRIVATE_KEY');
-const ALCHEMY_API_KEY_ETH = vars.get('ALCHEMY_API_KEY_ETH');
-const ALCHEMY_API_KEY_SEPOLIA = vars.get('ALCHEMY_API_KEY_SEPOLIA');
-const ALCHEMY_API_KEY_BASE = vars.get('ALCHEMY_API_KEY_BASE');
-const ALCHEMY_API_KEY_BLAST = vars.get('ALCHEMY_API_KEY_BLAST');
-const ETHERSCAN_API_KEY = vars.get('ETHERSCAN_API_KEY');
-const BASESCAN_API_KEY = vars.get('BASESCAN_API_KEY');
-const BLASTSCAN_API_KEY = vars.get('BLASTSCAN_API_KEY');
-const COINMARKETCAP_API_KEY = vars.get('COINMARKETCAP_API_KEY');
+const PRIVATE_KEY = vars.get("PRIVATE_KEY");
+const ALCHEMY_API_KEY_ETH = vars.get("ALCHEMY_API_KEY_ETH");
+const ALCHEMY_API_KEY_SEPOLIA = vars.get("ALCHEMY_API_KEY_SEPOLIA");
+const ALCHEMY_API_KEY_BASE = vars.get("ALCHEMY_API_KEY_BASE");
+const ALCHEMY_API_KEY_BLAST = vars.get("ALCHEMY_API_KEY_BLAST");
+const ETHERSCAN_API_KEY = vars.get("ETHERSCAN_API_KEY");
+const BASESCAN_API_KEY = vars.get("BASESCAN_API_KEY");
+const BLASTSCAN_API_KEY = vars.get("BLASTSCAN_API_KEY");
+const COINMARKETCAP_API_KEY = vars.get("COINMARKETCAP_API_KEY");
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -45,7 +45,7 @@ const config: HardhatUserConfig = {
     blast: {
       chainId: 81457,
       url: ALCHEMY_API_KEY_BLAST,
-      accounts: [`0x${PRIVATE_KEY}`]
+      accounts: [`0x${PRIVATE_KEY}`],
     },
     coverage: {
       url: "http://127.0.0.1:8555",
@@ -55,8 +55,8 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: ETHERSCAN_API_KEY,
       base: BASESCAN_API_KEY,
-      blast: BLASTSCAN_API_KEY
-    }, 
+      blast: BLASTSCAN_API_KEY,
+    },
     customChains: [
       {
         network: "base",
@@ -84,7 +84,7 @@ const config: HardhatUserConfig = {
   },
   typechain: {
     outDir: "types",
-    target: "ethers-v5",
+    target: "ethers-v6",
   },
   contractSizer: {
     alphaSort: true,
