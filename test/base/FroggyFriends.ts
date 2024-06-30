@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/src/signers";
-import { Contract, ContractFactory, keccak256, solidityPacked } from "ethers";
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { ContractFactory, keccak256, solidityPacked } from "ethers";
 import { FroggyFriends as FroggyFriendsEth } from "../../types/contracts/eth";
 import { FroggyFriends as FroggyFriendsBase } from "../../types/contracts/base";
 
@@ -17,8 +17,8 @@ describe("ONFT721: ", function () {
 
   let owner: HardhatEthersSigner,
     warlock: HardhatEthersSigner,
-    lzEndpointMockA: Contract,
-    lzEndpointMockB: Contract,
+    lzEndpointMockA: BaseContract,
+    lzEndpointMockB: BaseContract,
     LZEndpointMock: ContractFactory,
     FroggyFriendsEthFactory: ContractFactory,
     FroggyFriendsBaseFactory: ContractFactory,
