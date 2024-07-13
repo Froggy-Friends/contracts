@@ -1,9 +1,17 @@
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { ethers, ignition, upgrades } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { ContractFactory, keccak256, solidityPacked } from "ethers";
+import {
+  BaseContract,
+  ContractFactory,
+  keccak256,
+  solidityPacked,
+} from "ethers";
 import { FroggyFriends as FroggyFriendsEth } from "../../types/contracts/eth";
 import { FroggyFriends as FroggyFriendsBase } from "../../types/contracts/base";
+import froggyFriendsModule from "../../ignition/modules/ProxyModule";
+import lzEndpointModule from "../../ignition/modules/LzEndpoint";
 
 describe("ONFT721: ", function () {
   const chainId_A = 1;
@@ -25,41 +33,66 @@ describe("ONFT721: ", function () {
     FroggyFriendsEth: FroggyFriendsEth,
     FroggyFriendsBase: FroggyFriendsBase;
 
-  before(async function () {
+  async function lzMockEndpointAFixture() {
+    return await ignition.deploy(lzEndpointModule, {
+      parameters: {
+        LzMockEndpoint: {
+          chainId: chainId_A,
+        },
+      },
+    });
+  }
+
+  async function lzMockEndpointBFixture() {
+    return await ignition.deploy(lzEndpointModule, {
+      parameters: {
+        LzMockEndpoint: {
+          chainId: chainId_B,
+        },
+      },
+    });
+  }
+
+  async function deployFroggyFriendsFixture() {
     const [_owner, _warlock] = await ethers.getSigners();
     owner = _owner;
     warlock = _warlock;
     LZEndpointMock = await ethers.getContractFactory("LZEndpointMock");
-    FroggyFriendsEthFactory = await ethers.getContractFactory(
-      "contracts/mainnet/FroggyFriends.sol:FroggyFriends"
+    // FroggyFriendsEthFactory = await ethers.getContractFactory(
+    //   "contracts/mainnet/FroggyFriends.sol:FroggyFriends"
+    // );
+    // FroggyFriendsBaseFactory = await ethers.getContractFactory(
+    //   "contracts/base/FroggyFriends.sol:FroggyFriends"
+    // );
+    const { froggyFriends, proxy, proxyAdmin } = await ignition.deploy(
+      froggyFriendsModule
     );
-    FroggyFriendsBaseFactory = await ethers.getContractFactory(
-      "contracts/base/FroggyFriends.sol:FroggyFriends"
-    );
-  });
+    return { froggyFriends };
+  }
 
   beforeEach(async function () {
-    lzEndpointMockA = await LZEndpointMock.deploy(chainId_A);
-    lzEndpointMockB = await LZEndpointMock.deploy(chainId_B);
+    const lzMockEndpointFixtureA = await loadFixture(lzMockEndpointAFixture);
+    const lzMockEndpointFixtureB = await loadFixture(lzMockEndpointBFixture);
 
     // generate a proxy to allow it to go ONFT
-    FroggyFriendsEth = (await upgrades.deployProxy(FroggyFriendsEthFactory, [
-      minGasToStore,
-      lzEndpointMockA.address,
-    ])) as FroggyFriendsEth;
-    FroggyFriendsBase = (await upgrades.deployProxy(FroggyFriendsBaseFactory, [
-      minGasToStore,
-      lzEndpointMockB.address,
-    ])) as FroggyFriendsBase;
+
+    // FroggyFriendsEth = (await upgrades.deployProxy(FroggyFriendsEthFactory, [
+    //   minGasToStore,
+    //   lzEndpointMockA.address,
+    // ])) as FroggyFriendsEth;
+    // FroggyFriendsBase = (await upgrades.deployProxy(FroggyFriendsBaseFactory, [
+    //   minGasToStore,
+    //   lzEndpointMockB.address,
+    // ])) as FroggyFriendsBase;
 
     // wire the lz endpoints to guide msgs back and forth
-    lzEndpointMockA.setDestLzEndpoint(
+    lzMockEndpointFixtureA.lzEndpointMock.setDestLzEndpoint(
       FroggyFriendsBase.address,
-      lzEndpointMockB.address
+      lzMockEndpointFixtureB.lzEndpointMock.address
     );
-    lzEndpointMockB.setDestLzEndpoint(
+    lzMockEndpointFixtureB.lzEndpointMock.setDestLzEndpoint(
       FroggyFriendsEth.address,
-      lzEndpointMockA.address
+      lzMockEndpointFixtureA.lzEndpointMock.address
     );
 
     // set each contracts source address so it can send to each other
