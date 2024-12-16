@@ -12,18 +12,19 @@ import {ONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/con
 import {IONFT721Upgradeable} from "@layerzerolabs/solidity-examples/contracts/contracts-upgradable/token/onft/ERC721/IONFT721Upgradeable.sol";
 import {MerkleProofUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
 import {ITadpole} from "./Interfaces.sol";
+import {CreatorTokenBase} from "@limitbreak/creator-token-contracts/contracts/utils/CreatorTokenBase.sol";
+import {ICreatorToken} from "@limitbreak/creator-token-contracts/contracts/interfaces/ICreatorToken.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 error InvalidSize();
-error InvalidToken();
-error InvalidHibernationStatus();
-error HibernationIncomplete();
-error OutOfTadpoles();
 
 contract FroggyFriends is
     OwnableUpgradeable,
     DefaultOperatorFiltererUpgradeable,
     ERC2981Upgradeable,
-    ONFT721Upgradeable
+    ONFT721Upgradeable,
+    CreatorTokenBase
 {
     string public froggyUrl;
     uint256 public maxSupply;
@@ -54,18 +55,6 @@ contract FroggyFriends is
         ONE_YEAR_ANNIVERSARY_SBT
     }
 
-    // Events
-    event Hibernate(
-        address indexed _holder,
-        uint256 indexed _hibernateDate,
-        HibernationStatus indexed _HibernationStatus
-    );
-    event Wake(
-        address indexed _holder,
-        uint256 indexed _wakeDate,
-        uint256 indexed _tadpoleAmount
-    );
-
     function initialize(
         uint256 _minGasToTransfer,
         address _lzEndpoint
@@ -84,24 +73,9 @@ contract FroggyFriends is
         maxSupply = 4444;
     }
 
-    function mint(uint256 tokenId) external payable {
-        require(_totalMinted < 4444, "Minted out");
-        _mint(msg.sender, tokenId);
-        _totalMinted++;
-    }
-
-    function totalSupply() public view returns (uint256) {
-        return _totalMinted;
-    }
-
-    function setFroggyUrl(string memory _froggyUrl) external onlyOwner {
-        froggyUrl = _froggyUrl;
-    }
-
     function tokenURI(
         uint256 tokenId
     ) public view virtual override returns (string memory) {
-        if (!_exists(tokenId)) revert InvalidToken();
         return
             string(
                 abi.encodePacked(
@@ -109,13 +83,6 @@ contract FroggyFriends is
                     StringsUpgradeable.toString(tokenId)
                 )
             );
-    }
-
-    function setRoyalties(
-        address receiver,
-        uint96 feeNumerator
-    ) external onlyOwner {
-        _setDefaultRoyalty(receiver, feeNumerator);
     }
 
     // =============================================================
@@ -190,86 +157,40 @@ contract FroggyFriends is
         override(ERC2981Upgradeable, ONFT721Upgradeable)
         returns (bool)
     {
-        return (interfaceId == type(IERC2981Upgradeable).interfaceId ||
-            interfaceId == type(IONFT721Upgradeable).interfaceId ||
-            super.supportsInterface(interfaceId));
+        return super.supportsInterface(interfaceId);
     }
 
-    // =============================================================
-    //                      HIBERNATION
-    // =============================================================
-
-    /**
-     * Wakes frogs from hibernation and distributes tadpole rewards to holder
-     */
-    function wake(bytes32[][] memory _proofs) external {
-        if (hibernationStatus[msg.sender] == HibernationStatus.AWAKE)
-            revert InvalidHibernationStatus();
-        if (getUnlockTimestamp(msg.sender) > block.timestamp)
-            revert HibernationIncomplete();
-        if (_proofs.length > 3) revert InvalidSize();
-        uint256 totalTadpoleAmount_ = calculateReward(_proofs, msg.sender);
-        if (totalTadpoleAmount_ > tadpole.balanceOf(address(this)))
-            revert OutOfTadpoles();
-        tadpole.transfer(msg.sender, totalTadpoleAmount_);
-        hibernationStatus[msg.sender] = HibernationStatus.AWAKE;
-        emit Wake(msg.sender, block.timestamp, totalTadpoleAmount_);
+    /// @dev Ties the open-zeppelin _beforeTokenTransfer hook to more granular transfer validation logic
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 firstTokenId,
+        uint256 batchSize
+    ) internal virtual override {
+        if (batchSize > 1) revert InvalidSize();
+        _validateBeforeTransfer(from, to, firstTokenId);
     }
 
-    /**
-     * Owner function to withdraw tadpole tokens
-     */
-    function withdraw(address account) public onlyOwner {
-        tadpole.transfer(account, tadpole.balanceOf(address(this)));
+    /// @dev Ties the open-zeppelin _afterTokenTransfer hook to more granular transfer validation logic
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 firstTokenId,
+        uint256 batchSize
+    ) internal virtual override {
+        if (batchSize > 1) revert InvalidSize();
+        _validateAfterTransfer(from, to, firstTokenId);
     }
 
-    /**
-     * Returns the unlock date to wake frogs from hibernation for a holder
-     * @param _holder address of holder to query
-     * @return unlockTimestamp hibernation completion date in seconds
-     */
-    function getUnlockTimestamp(address _holder) public view returns (uint256) {
-        return
-            hibernationOneDate[_holder] +
-            (uint256(hibernationStatus[_holder]) * 30 days);
+    function _requireCallerIsContractOwner() internal view virtual override {
+        _checkOwner();
     }
 
-    /**
-     * Calculates total rewards for hibernation chosen by holder per Froggy.
-     * Reward is number of frogs owned multiplied by the duration rate and boosts
-     * @param _proofs merkle proofs array for boost ownership
-     */
-    function calculateReward(
-        bytes32[][] memory _proofs,
-        address _holder
-    ) public view returns (uint256) {
-        uint256 hibernationTadpole_ = hibernationStatusRate[
-            hibernationStatus[_holder]
-        ] * balanceOf(_holder);
-        uint256 totalBoost_;
-        for (uint256 index = 0; index < _proofs.length; index++) {
-            if (
-                _proofs[index].length > 0 &&
-                _verifyProof(_proofs[index], roots[Boost(index)], _holder)
-            ) {
-                totalBoost_ += boostRate[Boost(index)];
-            }
-        }
-
-        return
-            hibernationTadpole_ + ((hibernationTadpole_ * totalBoost_) / 100);
+    function _msgData() internal view virtual override(ContextUpgradeable, Context) returns (bytes calldata) {
+        return ContextUpgradeable._msgData();
     }
 
-    function _verifyProof(
-        bytes32[] memory _proof,
-        bytes32 _root,
-        address _holder
-    ) private pure returns (bool) {
-        return
-            MerkleProofUpgradeable.verify(
-                _proof,
-                _root,
-                keccak256(abi.encodePacked(_holder))
-            );
+    function _msgSender() internal view virtual override(ContextUpgradeable, Context) returns (address) {
+        return ContextUpgradeable._msgSender();
     }
 }
