@@ -13,6 +13,7 @@ export async function upgrade(taskArgs: TaskArguments, hre: HRE) {
   console.log("Deployer: ", owner.address);
 
   const address = getContractAddress(network.name);
+  console.log("Address: ", address);
   const instance = await upgrades.upgradeProxy(address, factory, {
     timeout: 0,
   });

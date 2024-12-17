@@ -38,6 +38,7 @@ export const providedGasLimits = new Map([
 export const contractAddresses = new Map([
   ["mainnet", froggyFriendsEth],
   ["base", "0x9DA02cBE93835E8b6c44563415C72D106B1ce00a"],
+  ["sepolia", "0xc8939011efd81fB0ca8382ed15EAb160c3a69313"],
 ]);
 
 export const lzEndpoints = new Map([
